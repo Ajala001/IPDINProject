@@ -10,7 +10,7 @@ using System.Security.Claims;
 
 namespace App.Application.Services
 {
-    public class AcademicQualificationService(IHttpContextAccessor httpContextAccessor, UserManager<User> userManager,
+    public class AcademicQualificationService(IHttpContextAccessor httpContextAccessor,
         IAcademicQualificationRepository qualificationRepository, IUnitOfWork unitOfWork)
         : IAcademicQualificationService
     {

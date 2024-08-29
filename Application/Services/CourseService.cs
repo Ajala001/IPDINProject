@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace App.Application.Services
 {
-    public class CourseService(IHttpContextAccessor httpContextAccessor, UserManager<User> userManager,
+    public class CourseService(IHttpContextAccessor httpContextAccessor,
         ICourseRepository courseRepository, IUnitOfWork unitOfWork) : ICourseService
     {
         public async Task<ApiResponse<CourseResponseDto>> CreateAsync(CreateCourseRequestDto request)
@@ -165,8 +165,6 @@ namespace App.Application.Services
                 Message = "Courses Retrieved Successfully",
                 Data = responseData
             };
-
-
         }
 
         public async Task<ApiResponse<CourseResponseDto>> UpdateAsync(Guid id, UpdateCourseRequestDto request)

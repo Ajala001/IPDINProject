@@ -19,7 +19,7 @@ namespace App.Infrastructure.Repositories
             dbContext.Examinations.Remove(examination);
         }
 
-        public async Task<Examination> GetExamination(Expression<Func<Examination, bool>> predicate)
+        public async Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate)
         {
             var result = await dbContext.Examinations.Include(a => a.Course)
                                                 .Include(a => a.Examinations)

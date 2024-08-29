@@ -1,18 +1,14 @@
-﻿using App.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace App.Core.DTOs.Responses
+﻿namespace App.Core.DTOs.Responses
 {
     public class ExaminationResponseDto
     {
         public Guid Id { get; set; }
         public string ExamTitle { get; set; } = null!;
-        public DateTime ExamDateAndTime { get; set; } 
+        public string ExamDate { get; set; } = null!;
+        public string ExamTime { get; set; } =null!;
+        public string ExamYear { get; set; } =null!;
         public string CourseTitle { get; set; } = null!;
+        public string CourseCode { get; set; } = null!;
         public decimal Fee { get; set; }
     }
 }
