@@ -6,7 +6,6 @@ using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace App.Application.Services
@@ -104,7 +103,7 @@ namespace App.Application.Services
             return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Examination Added Succesfully",
+                Message = "Examination Retrieved Succesfully",
                 Data = new ExaminationResponseDto
                 {
                     Id = examination.Id,
@@ -189,9 +188,41 @@ namespace App.Application.Services
             };
         }
 
-        public Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request)
+        public async Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request)
         {
-            throw new NotImplementedException();
+            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id);
+            if (examination == null) return new ApiResponse<ExaminationResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Examination Not Found",
+                Data = null
+            };
+
+            examination.CourseId = request.CourseId ?? examination.CourseId;
+            examination.ExamTitle = request.ExamTitle ?? examination.ExamTitle;
+            examination.ExamYear = request.ExamYear ?? examination.ExamYear;
+            examination.Fee = request.Fee ?? examination.Fee;
+            examination.ExamDateAndTime = request.ExamDateAndTime ?? examination.ExamDateAndTime;
+
+            examinationRepository.Update(examination);
+            await unitOfWork.SaveAsync();
+
+            return new ApiResponse<ExaminationResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Examination Updated Succesfully",
+                Data = new ExaminationResponseDto
+                {
+                    Id = examination.Id,
+                    ExamTitle = examination.ExamTitle,
+                    ExamDate = examination.ExamDateAndTime.ToString("D"),
+                    ExamTime = examination.ExamDateAndTime.ToString("t"),
+                    CourseTitle = examination.Course.CourseTitle,
+                    CourseCode = examination.Course.CourseCode,
+                    Fee = examination.Fee
+                }
+            };
         }
     }
 }
+

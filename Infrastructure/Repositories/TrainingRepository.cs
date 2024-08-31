@@ -29,6 +29,11 @@ namespace App.Infrastructure.Repositories
             return await dbContext.Trainings.Include(t => t.Trainings).ToListAsync();
         }
 
+        public IQueryable<Training> Query()
+        {
+            return dbContext.Trainings.AsQueryable();
+        }
+
         public async Task<IEnumerable<Training>> SearchTrainingAsync(string trainingTitle)
         {
             return await dbContext.Trainings.Where(t => t

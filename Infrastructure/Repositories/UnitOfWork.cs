@@ -9,5 +9,10 @@ namespace App.Infrastructure.Repositories
         {
             return await dbContext.SaveChangesAsync();
         }
+
+        public async Task<int> SaveAsync(CancellationToken stoppingToken)
+        {
+            return await dbContext.SaveChangesAsync(stoppingToken);
+        }
     }
 }

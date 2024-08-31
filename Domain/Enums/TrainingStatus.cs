@@ -2,7 +2,9 @@
 {
     public enum TrainingStatus
     {
-        Ongoing = 1,
-        Completed
+        Scheduled = 1,
+        Ongoing,
+        Completed,
+        Cancelled
     }
 }

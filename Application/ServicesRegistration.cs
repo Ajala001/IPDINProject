@@ -19,6 +19,8 @@ namespace App.Application
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITrainingService, TrainingService>();
             services.AddScoped<IUserService, UserService>();
+
+            services.AddHostedService<TrainingStatusUpdaterService>();
             return services;
         }
     }
