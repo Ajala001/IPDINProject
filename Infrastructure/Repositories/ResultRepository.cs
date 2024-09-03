@@ -8,10 +8,10 @@ namespace App.Infrastructure.Repositories
 {
     public class ResultRepository(IPDINDbContext dbContext) : IResultRepository
     {
-        public async Task<Result> CreateAsync(Result result)
+        public async Task<IEnumerable<Result>> UploadResultAsync(List<Result> results)
         {
-            await dbContext.Results.AddAsync(result);
-            return result;  
+            await dbContext.Results.AddRangeAsync(results);
+            return results;  
         }
 
         public void Delete(Result result)

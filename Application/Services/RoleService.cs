@@ -2,41 +2,174 @@
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
+using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
+using App.Infrastructure.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace App.Application.Services
 {
-    public class RoleService : IRoleService
+    public class RoleService(RoleManager<Role> roleManager, IHttpContextAccessor contextAccessor, 
+            UserManager<User> userManager) : IRoleService
     {
-        public Task<bool> AddUserRoleAsync(User user, string roleName)
+        public async Task<bool> AddUserRoleAsync(User user, string roleName)
         {
-            throw new NotImplementedException();
+            var role = await roleManager.FindByNameAsync(roleName);
+            if (role != null)
+            {
+                var result = await userManager.AddToRoleAsync(user, roleName);
+                return result.Succeeded;
+            }
+            return false;
         }
 
-        public Task<IdentityResult> CreateAsync(CreateRoleRequestDto request)
+        public async Task<IdentityResult> CreateAsync(CreateRoleRequestDto request)
         {
-            throw new NotImplementedException();
+            var loginUser = contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var role = new Role()
+            {
+                Id = Guid.NewGuid(),
+                Name = request.RoleName,
+                Description = request.Description,
+                CreatedBy = loginUser!,
+                CreatedOn = DateTime.Now
+            };
+            var roleCreated = await roleManager.CreateAsync(role);
+            return roleCreated;
         }
 
-        public Task<ApiResponse<RoleResponseDto>> DeleteAsync(Guid id)
+        public async Task<ApiResponse<RoleResponseDto>> DeleteAsync(string roleName)
         {
-            throw new NotImplementedException();
+            var role = await roleManager.FindByNameAsync(roleName);
+            if (role == null) return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Role not found",
+                Data = null
+            };
+
+            var result = await roleManager.DeleteAsync(role);
+            if (result.Succeeded)
+            {
+                return new ApiResponse<RoleResponseDto>
+                {
+                    IsSuccessful = true,
+                    Message = "Role deleted successfully",
+                    Data = null
+                };
+            }
+
+            return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Failed to delete role",
+                Data = null
+            };
+
         }
 
-        public Task<ApiResponse<RoleResponseDto>> GetRoleAsync(Guid id)
+        public async Task<ApiResponse<RoleResponseDto>> GetRoleAsync(string roleName)
         {
-            throw new NotImplementedException();
+            var role = await roleManager.FindByNameAsync(roleName);
+            if (role == null) return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Role not found",
+                Data = null
+            };
+
+            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name);
+            var fullNames = usersInRole.Select(u => $"{u.FirstName} {u.LastName}").ToList();
+
+            return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Role Found Successfully",
+                Data = new RoleResponseDto
+                {
+                    Id = role.Id,
+                    RoleName = role.Name!,
+                    Description = role.Description!,
+                    FullNames = fullNames
+                }
+            };
         }
 
-        public Task<ApiResponse<IEnumerable<RoleResponseDto>>> GetRolesAsync()
+        public async Task<ApiResponse<IEnumerable<RoleResponseDto>>> GetRolesAsync()
         {
-            throw new NotImplementedException();
+            var roles = await roleManager.Roles.ToListAsync();
+            if (roles == null || !roles.Any())
+            {
+                return new ApiResponse<IEnumerable<RoleResponseDto>>
+                {
+                    IsSuccessful = false,
+                    Message = "No roles found",
+                    Data = null
+                };
+            }
+
+            var roleDtos = new List<RoleResponseDto>();
+            foreach (var role in roles)
+            {
+                var usersInRole = await userManager.GetUsersInRoleAsync(role.Name);
+                var fullNames = usersInRole.Select(user => $"{user.FirstName} {user.LastName}").ToList();
+                var roleDto = new RoleResponseDto
+                {
+                    Id = role.Id,
+                    RoleName = role.Name!,
+                    Description = role.Description!,
+                    FullNames = fullNames
+                };
+                roleDtos.Add(roleDto);
+            }
+
+            return new ApiResponse<IEnumerable<RoleResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Roles retrieved successfully",
+                Data = roleDtos
+            };
         }
 
-        public Task<ApiResponse<RoleResponseDto>> UpdateAsync(UpdateRoleRequestDto request)
+
+        public async Task<ApiResponse<RoleResponseDto>> UpdateAsync(string roleName, UpdateRoleRequestDto request)
         {
-            throw new NotImplementedException();
+            var loginUser = contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var role = await roleManager.FindByNameAsync(roleName);
+            if(role == null) return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "No roles found",
+                Data = null
+            };
+
+            role.Name = request.RoleName ?? role.Name;
+            role.Description = request.Description ?? role.Description;
+            role.ModifiedBy = loginUser!;
+            role.ModifiedOn = DateTime.Now;
+
+            var result = await roleManager.UpdateAsync(role);
+            if (!result.Succeeded) return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Failed to update the role",
+                Data = null
+            };
+
+            return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Role updated successfully",
+                Data = new RoleResponseDto
+                {
+                    Id = role.Id,
+                    RoleName = role.Name!,
+                    Description = role.Description!
+                }
+            };
         }
     }
 }

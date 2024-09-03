@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using App.Core.Enums;
 
 namespace App.Core.DTOs.Requests.UpdateRequestDtos
 {
     public class UpdatePaymentRequestDto
     {
+        public string? ReasonForPayment { get; set; }
+        public PaymentStatus? Status { get; set; }
     }
 }

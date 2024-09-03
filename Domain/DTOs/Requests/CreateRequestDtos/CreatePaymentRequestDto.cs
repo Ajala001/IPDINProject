@@ -2,7 +2,8 @@
 {
     public class CreatePaymentRequestDto
     {
-        public required string PaymentFor { get; set; }
+        public Guid EntityId { get; set; }
+        public string ReasonForPayment { get; set; } = string.Empty;
     }
 }
 

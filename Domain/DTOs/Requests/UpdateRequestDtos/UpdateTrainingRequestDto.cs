@@ -6,7 +6,7 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
     {
         public string? Title { get; set; }
         public string? Description { get; set; }
-        public decimal? Fee { get; set; }
+        public int? Fee { get; set; }
         public DateTime? StartingDateAndTime { get; set; }
         public DateTime? EndingDateAndTime { get; set; }
         public DateTime? RegistrationDeadline { get; set; }

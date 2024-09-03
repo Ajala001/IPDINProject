@@ -5,7 +5,7 @@
         public Guid? CourseId { get; set; }
         public string? ExamTitle { get; set; }
         public DateOnly? ExamYear { get; set; }
-        public decimal? Fee { get; set; }
+        public int? Fee { get; set; }
         public DateTime? ExamDateAndTime { get; set; }
     }
 }

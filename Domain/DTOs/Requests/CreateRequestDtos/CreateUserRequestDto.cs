@@ -1,5 +1,4 @@
-﻿using App.Core.Entities;
-using App.Core.Enums;
+﻿using App.Core.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Core.DTOs.Requests.CreateRequestDtos

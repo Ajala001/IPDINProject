@@ -12,9 +12,11 @@ namespace App.Presentation
             services.AddScoped<IAppEnvironment, AppEnvironment>();
 
             services.AddApplication()
-                    .AddCore()
-                    .AddInfrastructure(configuration);
+            .AddCore()
+            .AddInfrastructure(configuration);
             return services;
         }
     }
 }
+
+

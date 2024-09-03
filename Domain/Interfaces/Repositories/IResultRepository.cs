@@ -5,7 +5,7 @@ namespace App.Core.Interfaces.Repositories
 {
     public interface IResultRepository
     {
-        Task<Result> CreateAsync(Result result);
+        Task<IEnumerable<Result>> UploadResultAsync(List<Result> results);
         Result Update(Result result);
         void Delete(Result result);
         Task<IEnumerable<Result>> GetResultsAsync();

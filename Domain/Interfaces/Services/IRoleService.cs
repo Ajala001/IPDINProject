@@ -15,9 +15,9 @@ namespace App.Core.Interfaces.Services
     {
         Task<IdentityResult> CreateAsync(CreateRoleRequestDto request);
         Task<bool> AddUserRoleAsync(User user, string roleName);
-        Task<ApiResponse<RoleResponseDto>> GetRoleAsync(Guid id);
-        Task<ApiResponse<RoleResponseDto>> UpdateAsync(UpdateRoleRequestDto request);
-        Task<ApiResponse<RoleResponseDto>> DeleteAsync(Guid id);
+        Task<ApiResponse<RoleResponseDto>> GetRoleAsync(string roleName);
+        Task<ApiResponse<RoleResponseDto>> UpdateAsync(string roleName, UpdateRoleRequestDto request);
+        Task<ApiResponse<RoleResponseDto>> DeleteAsync(string roleName);
         Task<ApiResponse<IEnumerable<RoleResponseDto>>> GetRolesAsync();
     }
 }

@@ -168,6 +168,7 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<CourseResponseDto>> UpdateAsync(Guid id, UpdateCourseRequestDto request)
         {
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var course = await courseRepository.GetCourseAsync(c => c.Id == id);
             if (course == null) return new ApiResponse<CourseResponseDto>
             {
@@ -180,6 +181,8 @@ namespace App.Application.Services
             course.CourseCode = request.CourseCode ?? course.CourseCode;
             course.CourseUnit = request.CourseUnit ?? course.CourseUnit;
             course.Status = request.Status ?? course.Status;
+            course.ModifiedBy = loginUser!;
+            course.ModifiedOn = DateTime.Now;
 
             courseRepository.Update(course);
             await unitOfWork.SaveAsync();

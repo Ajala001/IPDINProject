@@ -190,6 +190,7 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request)
         {
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id);
             if (examination == null) return new ApiResponse<ExaminationResponseDto>
             {
@@ -203,6 +204,8 @@ namespace App.Application.Services
             examination.ExamYear = request.ExamYear ?? examination.ExamYear;
             examination.Fee = request.Fee ?? examination.Fee;
             examination.ExamDateAndTime = request.ExamDateAndTime ?? examination.ExamDateAndTime;
+            examination.ModifiedOn = DateTime.UtcNow;
+            examination.ModifiedBy = loginUser!;
 
             examinationRepository.Update(examination);
             await unitOfWork.SaveAsync();

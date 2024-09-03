@@ -1,5 +1,6 @@
 ﻿using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace App.Core.DTOs.Requests.UpdateRequestDtos
 {
@@ -11,7 +12,7 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
             public string? LastName { get; set; }
             public Gender? Gender { get; set; }
             public DateOnly? DateOfBirth { get; set; }
-            public string? ProfilePic { get; set; }
+            public IFormFile? ProfilePic { get; set; }
             public UserCategory? Category { get; set; }
             public short? StreetNo { get; set; }
             public string? StreetName { get; set; }
