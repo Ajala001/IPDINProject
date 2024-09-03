@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace App.Core.DTOs.Requests.CreateRequestDtos
 {
-    public class LoginRequestDto
+    public class SignInRequestDto
     {
         [Required(ErrorMessage = "Please Enter Your Membership Number")]
         public required string MembershipNumber { get; set; }

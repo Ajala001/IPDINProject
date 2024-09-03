@@ -48,10 +48,13 @@ namespace App.Infrastructure.Persistence
                 var admin = new User
                 {
                     Id = Guid.NewGuid(),
+                    FirstName = "Abdbaasit",
+                    LastName = "Ajala",
                     UserName = "admin@example.com",
                     Email = "admin@example.com",
                     EmailConfirmed = true,
                     Gender = Core.Enums.Gender.Male,
+                    DateOfBirth = DateOnly.FromDateTime(DateTime.Now),
                     CreatedOn = DateTime.Now,
                     CreatedBy = "Admin"
                 };

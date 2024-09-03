@@ -1,6 +1,9 @@
 ﻿using App.Core.Interfaces;
 using App.Core.Interfaces.Repositories;
 using App.Infrastructure.Data;
+using App.Infrastructure.ExternalServices.Authentication;
+using App.Infrastructure.ExternalServices.Email;
+using App.Infrastructure.ExternalServices.Payments;
 using App.Infrastructure.Identity;
 using App.Infrastructure.Persistence;
 using App.Infrastructure.Repositories;
@@ -17,7 +20,7 @@ namespace App.Infrastructure
             {
                 options.UseMySQL(configuration.GetConnectionString("IPDINConnectionString"));
             });
-            
+
             services.AddScoped<IdentitySeeder>();
 
             // Register Repositories
@@ -30,7 +33,14 @@ namespace App.Infrastructure
             services.AddScoped<ITrainingRepository, TrainingRepository>();
             services.AddScoped<IFileRepository, FileRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+
+            services.AddTransient<IEmailService, EmailService>();
+            services.AddTransient<IPaymentService, PaymentService>();
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+
             
+
 
             // Register other infrastructure services here...
 

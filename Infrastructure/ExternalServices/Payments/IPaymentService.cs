@@ -2,7 +2,7 @@
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 
-namespace App.Core.Interfaces.Services
+namespace App.Infrastructure.ExternalServices.Payments
 {
     public interface IPaymentService
     {

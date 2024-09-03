@@ -4,11 +4,11 @@ namespace App.Core.Entities
 {
     public class User : IdentityUser<Guid>
     {
-        public string? LastName { get; set; }
-        public string? FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string FirstName { get; set; }
         public string? MembershipNumber { get; set; }
         public required Gender Gender { get; set; }
-        public DateOnly? DateOfBirth { get; set; }
+        public required DateOnly DateOfBirth { get; set; }
         public string? ProfilePic { get; set; }
         public UserCategory? Category { get; set; }
         public short? StreetNo { get; set; }
@@ -34,6 +34,7 @@ namespace App.Core.Entities
         public required string CreatedBy { get; set; }
         public DateTime? ModifiedOn { get; set; }
         public string? ModifiedBy { get; set; }
+
     }
 
 }

@@ -3,14 +3,13 @@ using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
-using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using PayStack.Net;
 using System.Security.Claims;
 
-namespace App.Application.Services
+namespace App.Infrastructure.ExternalServices.Payments
 {
     public class PaymentService : IPaymentService
     {
@@ -24,10 +23,10 @@ namespace App.Application.Services
         private readonly string token;
 
         private PayStackApi PayStack { get; set; }
-        public PaymentService(IHttpContextAccessor httpContextAccessor, IPaymentRepository paymentRepository, 
+        public PaymentService(IHttpContextAccessor httpContextAccessor, IPaymentRepository paymentRepository,
             IConfiguration configuration, IUnitOfWork unitOfWork, IExaminationRepository examinationRepository,
-            ITrainingRepository trainingRepository, UserManager<User> userManager) 
-        { 
+            ITrainingRepository trainingRepository, UserManager<User> userManager)
+        {
             _contextAccessor = httpContextAccessor;
             _paymentRepository = paymentRepository;
             _trainingRepository = trainingRepository;
@@ -193,14 +192,14 @@ namespace App.Application.Services
 
             if (paymentReason == "Training")
             {
-                var training = await _trainingRepository.GetTrainingAsync(t => t.Id == entityId) 
+                var training = await _trainingRepository.GetTrainingAsync(t => t.Id == entityId)
                     ?? throw new Exception("Training not found");
                 fee = training.Fee;
                 entityName = training.Title;
             }
             else if (paymentReason == "Exam")
             {
-                var exam = await _examinationRepository.GetExaminationAsync(e => e.Id == entityId) 
+                var exam = await _examinationRepository.GetExaminationAsync(e => e.Id == entityId)
                     ?? throw new Exception("Exam not found");
                 fee = exam.Fee;
                 entityName = exam.ExamTitle;

@@ -1,22 +1,18 @@
-﻿using App.Core.DTOs.Requests.CreateRequestDtos;
-using App.Core.DTOs.Requests.UpdateRequestDtos;
+﻿using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace App.Application.Services
 {
-    public class UserService(SignInManager<User> signInManager, UserManager<User> userManager,
-        IFileRepository fileRepository, IHttpContextAccessor _contextAccessor) : IUserService
+    public class UserService(UserManager<User> userManager, IFileRepository fileRepository,
+        IHttpContextAccessor httpContextAccessor) : IUserService
     {
-        public Task<IdentityResult> CreateAsync(CreateUserRequestDto request)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<ApiResponse<UserResponseDto>> DeleteAsync(string email)
         {
             var user = await userManager.FindByEmailAsync(email);
@@ -28,7 +24,7 @@ namespace App.Application.Services
             };
 
             var result = await userManager.DeleteAsync(user);
-            if(!result.Succeeded) return new ApiResponse<UserResponseDto>
+            if (!result.Succeeded) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Failed to delete",
@@ -44,11 +40,6 @@ namespace App.Application.Services
 
         }
 
-        public Task<string> GetRolesAsync(User user)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<ApiResponse<UserResponseDto>> GetUserAsync(string email)
         {
             var user = await userManager.FindByEmailAsync(email);
@@ -59,41 +50,115 @@ namespace App.Application.Services
                 Data = null
             };
 
-            var userRole = await userManager.GetRolesAsync(user);
             return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = true,
-                Message = "User found",
-                Data = new UserResponseDto
-                {
-                    Id = user.Id,
-                    FullName = $"{user.FirstName} {user.LastName}",
-                    DriverLicenseNo = user.DriverLicenseNo,
-                    
-                }
+                Message = "User retrieved successfully",
+                Data = UserResponseDto(user, await userManager.GetRolesAsync(user))
             };
         }
 
-        public Task<ApiResponse<IEnumerable<UserResponseDto>>> GetUsersAsync()
+        public async Task<ApiResponse<IEnumerable<UserResponseDto>>> GetUsersAsync()
         {
-            throw new NotImplementedException();
+            var users = await userManager.Users.ToListAsync()
+                ?? throw new Exception("No User Found");
+
+            var userResponseDtos = new List<UserResponseDto>();
+            foreach (var user in users)
+            {
+                UserResponseDto(user, await userManager.GetRolesAsync(user));
+            }
+
+            return new ApiResponse<IEnumerable<UserResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Users retrieved successfully",
+                Data = userResponseDtos
+            };
         }
 
-        public async Task LogOutAsync()
+        public async Task<ApiResponse<UserResponseDto>> UpdateAsync(string email, UpdateUserRequestDto request)
         {
-            await signInManager.SignOutAsync();
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null) return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "User not found",
+                Data = null
+            };
+
+            if (request.ProfilePic != null)
+            {
+                var imageUpload = await fileRepository.UploadAsync(request.ProfilePic);
+                if (imageUpload != null)
+                {
+                    user.ProfilePic = imageUpload;
+                }
+            }
+
+            user.FirstName = request.FirstName ?? user.FirstName;
+            user.LastName = request.LastName ?? user.LastName;
+            user.Gender = request.Gender ?? user.Gender;
+            user.PhoneNumber = request.PhoneNumber ?? user.PhoneNumber;
+            user.Email = request.Email ?? user.Email;
+            user.DateOfBirth = request.DateOfBirth ?? user.DateOfBirth;
+            user.Category = request.Category ?? user.Category;
+            user.StreetNo = request.StreetNo ?? user.StreetNo;
+            user.StreetName = request.StreetName ?? user.StreetName;
+            user.City = request.City ?? user.City;
+            user.StateOfResidence = request.StateOfResidence ?? user.StateOfResidence;
+            user.LocalGovt = request.LocalGovt ?? user.LocalGovt;
+            user.StateOfOrigin = request.StateOfOrigin ?? user.StateOfOrigin;
+            user.Country = request.Country ?? user.Country;
+            user.DriverLicenseNo = request.DriverLicenseNo ?? user.DriverLicenseNo;
+            user.YearIssued = request.YearIssued ?? user.YearIssued;
+            user.ExpiringDate = request.ExpiringDate ?? user.ExpiringDate;
+            user.YearsOfExperience = request.YearsOfExperience ?? user.YearsOfExperience;
+            user.NameOfCurrentDrivingSchool = request.NameOfCurrentDrivingSchool ?? user.NameOfCurrentDrivingSchool;
+            user.ModifiedBy = loginUser;
+            user.ModifiedOn = DateTime.Now;
+
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return new ApiResponse<UserResponseDto> { IsSuccessful = false, Message = "Update not Successful" };
+
+            return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "User updated successfully",
+                Data = UserResponseDto(user, await userManager.GetRolesAsync(user))
+            };
         }
 
-        public async Task<SignInResult> PasswordSignInAsync(User user, LoginRequestDto request)
-        {
-            var result = await signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, false);
-            var newResult = result;
-            return newResult;
-        }
 
-        public async Task<IdentityResult> UpdateAsync(User user, UpdateUserRequestDto request)
+
+        private static UserResponseDto UserResponseDto(User user, IList<string> roles)
         {
-            var imageUpload = fileRepository.UploadAsync();
+            return new UserResponseDto
+            {
+                Id = user.Id,
+                FullName = $"{user.FirstName} {user.LastName}",
+                RoleNames = roles.ToList(),
+                MembershipNumber = user.MembershipNumber ?? string.Empty,
+                Gender = user.Gender,
+                DateOfBirth = user.DateOfBirth,
+                ProfilePic = user.ProfilePic ?? string.Empty,
+                Category = user.Category,
+                Address = $"{user.StreetNo?.ToString() ?? string.Empty}, {user.StreetName} {user.City} {user.StateOfResidence}, {user.Country}",
+                LocalGovt = user.LocalGovt ?? string.Empty,
+                StateOfOrigin = user.StateOfOrigin ?? string.Empty,
+                DriverLicenseNo = user.DriverLicenseNo ?? string.Empty,
+                YearIssued = user.YearIssued,
+                ExpiringDate = user.ExpiringDate,
+                YearsOfExperience = user.YearsOfExperience,
+                NameOfCurrentDrivingSchool = user.NameOfCurrentDrivingSchool ?? string.Empty,
+                AcademicQualifications = user.UserAcademicQualifications?.Select(u => new AcademicQualificationInfo
+                {
+                    Degree = u.Qualification.Degree ?? string.Empty,
+                    FieldOfStudy = u.Qualification.FieldOfStudy ?? string.Empty
+                }).ToList()
+            };
         }
     }
 }
