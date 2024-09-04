@@ -1,9 +1,8 @@
-﻿using App.Core.Interfaces;
+﻿using App.Application.IExternalServices;
+using App.Core.Interfaces;
 using App.Core.Interfaces.Repositories;
 using App.Infrastructure.Data;
-using App.Infrastructure.ExternalServices.Authentication;
-using App.Infrastructure.ExternalServices.Email;
-using App.Infrastructure.ExternalServices.Payments;
+using App.Infrastructure.ExternalServices;
 using App.Infrastructure.Identity;
 using App.Infrastructure.Persistence;
 using App.Infrastructure.Repositories;
@@ -37,7 +36,7 @@ namespace App.Infrastructure
 
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IPaymentService, PaymentService>();
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
+            services.AddScoped<IAuthService, AuthService>();
 
             
 

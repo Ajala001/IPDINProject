@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace App.Infrastructure.Migrations
 {
     [DbContext(typeof(IPDINDbContext))]
-    [Migration("20240828141050_appLication")]
-    partial class appLication
+    [Migration("20240904130924_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -162,8 +162,11 @@ namespace App.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<decimal>("Fee")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<DateOnly>("ExamYear")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Fee")
+                        .HasColumnType("int");
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
@@ -200,12 +203,13 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("PaymentFor")
+                    b.Property<string>("PaymentRef")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<Guid>("PaymentRef")
-                        .HasColumnType("char(36)");
+                    b.Property<string>("ReasonForPayment")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -289,8 +293,8 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("EndingDateAndTime")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<decimal>("Fee")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<int>("Fee")
+                        .HasColumnType("int");
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
@@ -345,7 +349,7 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateOnly?>("DateOfBirth")
+                    b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("date");
 
                     b.Property<string>("DriverLicenseNo")
@@ -362,12 +366,14 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("Gender")
                         .HasColumnType("int");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("LocalGovt")

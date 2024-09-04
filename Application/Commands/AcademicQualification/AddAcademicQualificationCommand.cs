@@ -3,9 +3,9 @@ using App.Core.DTOs.Responses;
 using App.Core.Interfaces.Services;
 using MediatR;
 
-namespace App.Application.Commands
+namespace App.Application.Commands.AcademicQualification
 {
-    public record AddAcademicQualificationCommand(CreateAcademicQualificationRequestDto Qualification) 
+    public record AddAcademicQualificationCommand(CreateAcademicQualificationRequestDto Qualification)
         : IRequest<ApiResponse<AcademicQualificationResponseDto>>;
 
     public class AddAcademicQualificationCommandHandler(IAcademicQualificationService academicQualificationService)

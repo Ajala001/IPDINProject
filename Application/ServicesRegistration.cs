@@ -8,6 +8,7 @@ namespace App.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+            services.AddHttpContextAccessor();
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ServicesRegistration).Assembly));
 
             services.AddScoped<IAcademicQualificationService, AcademicQualificationService>();
@@ -20,6 +21,7 @@ namespace App.Application
             services.AddScoped<IUserService, UserService>();
 
             services.AddHostedService<TrainingStatusUpdaterService>();
+
             return services;
         }
     }

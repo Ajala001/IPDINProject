@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace App.Application.Queries
+namespace App.Application.Queries.AcademicQualification
 {
     public record GetAcademicQualificationByIdQuery(Guid qualificationId) : IRequest<ApiResponse<AcademicQualificationResponseDto>>;
 

@@ -12,7 +12,7 @@ using System.Text.Json;
 
 namespace App.Application.Services
 {
-    public class ResultService(UserManager<User> userManager, HttpContextAccessor httpContextAccessor,
+    public class ResultService(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor,
         IExaminationRepository examinationRepository, IResultRepository resultRepository, 
         IUnitOfWork unitOfWork, ILogger<ResultService> logger) : IResultService
     {

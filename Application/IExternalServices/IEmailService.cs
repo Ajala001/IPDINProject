@@ -1,7 +1,7 @@
 ﻿using App.Core.DTOs.Requests.CreateRequestDtos;
 using System.Net.Mail;
 
-namespace App.Infrastructure.ExternalServices.Email
+namespace App.Application.IExternalServices
 {
     public interface IEmailService
     {

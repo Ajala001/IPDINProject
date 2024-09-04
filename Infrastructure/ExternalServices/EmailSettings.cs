@@ -1,4 +1,4 @@
-﻿namespace App.Infrastructure.ExternalServices.Email
+﻿namespace App.Infrastructure.ExternalServices
 {
     public class EmailSettings
     {

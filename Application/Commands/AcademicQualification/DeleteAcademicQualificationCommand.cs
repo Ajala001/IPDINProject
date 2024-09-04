@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace App.Application.Commands
+namespace App.Application.Commands.AcademicQualification
 {
-    public record DeleteAcademicQualificationCommand(Guid QualificationId) 
+    public record DeleteAcademicQualificationCommand(Guid QualificationId)
         : IRequest<ApiResponse<AcademicQualificationResponseDto>>;
 
     public class DeleteAcademicQualificationCommandHandler(IAcademicQualificationService academicQualificationService)

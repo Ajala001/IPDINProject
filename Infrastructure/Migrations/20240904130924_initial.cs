@@ -36,25 +36,6 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Applications",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ApplicationPurpose = table.Column<string>(type: "longtext", nullable: false),
-                    Date = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
-                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Applications", x => x.Id);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
                 {
@@ -79,11 +60,11 @@ namespace App.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    LastName = table.Column<string>(type: "longtext", nullable: true),
-                    FirstName = table.Column<string>(type: "longtext", nullable: true),
+                    LastName = table.Column<string>(type: "longtext", nullable: false),
+                    FirstName = table.Column<string>(type: "longtext", nullable: false),
                     MembershipNumber = table.Column<string>(type: "longtext", nullable: true),
                     Gender = table.Column<int>(type: "int", nullable: false),
-                    DateOfBirth = table.Column<DateOnly>(type: "date", nullable: true),
+                    DateOfBirth = table.Column<DateOnly>(type: "date", nullable: false),
                     ProfilePic = table.Column<string>(type: "longtext", nullable: true),
                     Category = table.Column<int>(type: "int", nullable: true),
                     StreetNo = table.Column<short>(type: "smallint", nullable: true),
@@ -150,7 +131,7 @@ namespace App.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
                     Title = table.Column<string>(type: "longtext", nullable: false),
                     Description = table.Column<string>(type: "longtext", nullable: true),
-                    Fee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Fee = table.Column<int>(type: "int", nullable: false),
                     StartingDateAndTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     EndingDateAndTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     RegistrationDeadline = table.Column<DateTime>(type: "datetime(6)", nullable: false),
@@ -186,6 +167,32 @@ namespace App.Infrastructure.Migrations
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Applications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    ApplicationPurpose = table.Column<string>(type: "longtext", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
+                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Applications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Applications_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -287,8 +294,8 @@ namespace App.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    PaymentRef = table.Column<Guid>(type: "char(36)", nullable: false),
-                    PaymentFor = table.Column<string>(type: "longtext", nullable: false),
+                    PaymentRef = table.Column<string>(type: "longtext", nullable: false),
+                    ReasonForPayment = table.Column<string>(type: "longtext", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedBy = table.Column<string>(type: "longtext", nullable: false),
@@ -334,40 +341,15 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "UserApplications",
-                columns: table => new
-                {
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ApplicationId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserApplications", x => new { x.UserId, x.ApplicationId });
-                    table.ForeignKey(
-                        name: "FK_UserApplications_Applications_ApplicationId",
-                        column: x => x.ApplicationId,
-                        principalTable: "Applications",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserApplications_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "Examinations",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
                     ExamTitle = table.Column<string>(type: "longtext", nullable: false),
                     ExamDateAndTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    ExamYear = table.Column<DateOnly>(type: "date", nullable: false),
                     CourseId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Fee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Fee = table.Column<int>(type: "int", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedBy = table.Column<string>(type: "longtext", nullable: false),
                     ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
@@ -496,6 +478,11 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Applications_UserId",
+                table: "Applications",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
                 column: "RoleId");
@@ -558,11 +545,6 @@ namespace App.Infrastructure.Migrations
                 column: "QualificationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserApplications_ApplicationId",
-                table: "UserApplications",
-                column: "ApplicationId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UserCourses_CourseId",
                 table: "UserCourses",
                 column: "CourseId");
@@ -581,6 +563,9 @@ namespace App.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Applications");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -606,9 +591,6 @@ namespace App.Infrastructure.Migrations
                 name: "UserAcademicQualifications");
 
             migrationBuilder.DropTable(
-                name: "UserApplications");
-
-            migrationBuilder.DropTable(
                 name: "UserCourses");
 
             migrationBuilder.DropTable(
@@ -622,9 +604,6 @@ namespace App.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "AcademicQualifications");
-
-            migrationBuilder.DropTable(
-                name: "Applications");
 
             migrationBuilder.DropTable(
                 name: "Examinations");

@@ -12,7 +12,7 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
         public Gender? Gender { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Email { get; set; }
-        public DateOnly? DateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
         public IFormFile? ProfilePic { get; set; }
         public UserCategory? Category { get; set; }
         public short? StreetNo { get; set; }
@@ -24,7 +24,7 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
         public string? Country { get; set; }
         public string? DriverLicenseNo { get; set; }
         public short? YearIssued { get; set; }
-        public DateOnly? ExpiringDate { get; set; }
+        public DateTime? ExpiringDate { get; set; }
         public short? YearsOfExperience { get; set; }
         public string? NameOfCurrentDrivingSchool { get; set; }
         public IEnumerable<AcademicQualification>? AcademicQualifications { get; set; }

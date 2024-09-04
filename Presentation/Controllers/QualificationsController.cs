@@ -1,15 +1,17 @@
-﻿using App.Application.Commands;
-using App.Application.Queries;
+﻿using App.Application.Commands.AcademicQualification;
+using App.Application.Queries.AcademicQualification;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AcademicQualificationsController(ISender sender) : ControllerBase
+    [Authorize]
+    public class QualificationsController(ISender sender) : ControllerBase
     {
         [HttpPost("")] //the default route
         public async Task<IActionResult> AddAcademicQualificationAsync([FromBody] CreateAcademicQualificationRequestDto request)

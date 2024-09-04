@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace App.Application.Commands
+namespace App.Application.Commands.AcademicQualification
 {
     public record UpdateAcademicQualificationCommand(Guid QualificationId, UpdateAcademicQualificationRequestDto UpdateRequest)
         : IRequest<ApiResponse<AcademicQualificationResponseDto>>;

@@ -1,9 +1,10 @@
-﻿using App.Core.DTOs.Requests.CreateRequestDtos;
+﻿using App.Application.IExternalServices;
+using App.Core.DTOs.Requests.CreateRequestDtos;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 
-namespace App.Infrastructure.ExternalServices.Email
+namespace App.Infrastructure.ExternalServices
 {
     public class EmailService(IOptions<EmailSettings> emailSettings) : IEmailService
     {

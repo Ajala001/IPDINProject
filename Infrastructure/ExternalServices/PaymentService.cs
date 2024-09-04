@@ -1,4 +1,5 @@
-﻿using App.Core.DTOs.Requests.CreateRequestDtos;
+﻿using App.Application.IExternalServices;
+using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Configuration;
 using PayStack.Net;
 using System.Security.Claims;
 
-namespace App.Infrastructure.ExternalServices.Payments
+namespace App.Infrastructure.ExternalServices
 {
     public class PaymentService : IPaymentService
     {

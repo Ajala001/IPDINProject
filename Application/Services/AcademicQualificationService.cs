@@ -36,7 +36,7 @@ namespace App.Application.Services
                 Email = "admin@example.com",
                 EmailConfirmed = true,
                 Gender = Core.Enums.Gender.Male,
-                DateOfBirth = DateOnly.FromDateTime(DateTime.Now),
+                DateOfBirth = DateTime.Now,
                 CreatedOn = DateTime.Now,
                 CreatedBy = "Admin"
             };

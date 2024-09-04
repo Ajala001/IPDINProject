@@ -8,7 +8,7 @@ namespace App.Core.Entities
         public required string FirstName { get; set; }
         public string? MembershipNumber { get; set; }
         public required Gender Gender { get; set; }
-        public required DateOnly DateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
         public string? ProfilePic { get; set; }
         public UserCategory? Category { get; set; }
         public short? StreetNo { get; set; }
@@ -20,7 +20,7 @@ namespace App.Core.Entities
         public string? Country { get; set; }
         public string? DriverLicenseNo { get; set; }
         public short? YearIssued { get; set; }
-        public  DateOnly? ExpiringDate { get; set; }
+        public  DateTime? ExpiringDate { get; set; }
         public short? YearsOfExperience { get; set; }
         public string? NameOfCurrentDrivingSchool { get; set; }
         public ICollection<Result> Results { get; set; } = new List<Result>();

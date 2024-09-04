@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace App.Core.DTOs.Requests.CreateRequestDtos
 {
-    public class RegistrationRequestDto
+    public class SignUpRequestDto
     {
         [Required(ErrorMessage = "Please Enter Your Last Name")]
         public required string LastName { get; set; }
@@ -27,8 +27,8 @@ namespace App.Core.DTOs.Requests.CreateRequestDtos
         [Required(ErrorMessage = "Please Select Your Gender")]
         public required Gender Gender { get; set; }
 
-        [Required(ErrorMessage = "Please Enter Your Date Of Birth")]
-        public required DateOnly DateOfBirth { get; set; }
+        //[Required(ErrorMessage = "Please Enter Your Date Of Birth")]
+        //public required DateTime DateOfBirth { get; set; }
 
     }
 

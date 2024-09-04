@@ -66,7 +66,8 @@ namespace App.Application.Services
             var userResponseDtos = new List<UserResponseDto>();
             foreach (var user in users)
             {
-                UserResponseDto(user, await userManager.GetRolesAsync(user));
+                var roles = await userManager.GetRolesAsync(user);
+                userResponseDtos.Add(UserResponseDto(user, roles));
             }
 
             return new ApiResponse<IEnumerable<UserResponseDto>>

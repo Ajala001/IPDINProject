@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace App.Application.Queries
+namespace App.Application.Queries.AcademicQualification
 {
     public record GetAllAcademicQualificationQuery() : IRequest<ApiResponse<IEnumerable<AcademicQualificationResponseDto>>>;
 
