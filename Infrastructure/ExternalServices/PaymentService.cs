@@ -61,7 +61,7 @@ namespace App.Infrastructure.ExternalServices
             };
         }
 
-        public async Task<Core.DTOs.Responses.ApiResponse<PaymentResponseDto>> GetPayment(string referenceNo)
+        public async Task<Core.DTOs.Responses.ApiResponse<PaymentResponseDto>> GetPaymentAsync(string referenceNo)
         {
             var payment = await _paymentRepository.GetPaymentAsync(p => p.PaymentRef == referenceNo);
             if (payment == null) return new Core.DTOs.Responses.ApiResponse<PaymentResponseDto>
@@ -116,7 +116,7 @@ namespace App.Infrastructure.ExternalServices
             };
         }
 
-        public async Task<string> InitiatePayment(CreatePaymentRequestDto requestDto)
+        public async Task<Core.DTOs.Responses.ApiResponse<string>> InitiatePaymentAsync(CreatePaymentRequestDto requestDto)
         {
             var loginUser = _contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var user = await _userManager.FindByEmailAsync(loginUser!);
@@ -146,9 +146,19 @@ namespace App.Infrastructure.ExternalServices
 
                 await _paymentRepository.CreateAsync(payment);
                 await _unitOfWork.SaveAsync();
-                return payStackResponse.Data.AuthorizationUrl;
+                return new Core.DTOs.Responses.ApiResponse<string>
+                {
+                    IsSuccessful = true,
+                    Message = payStackResponse.Message,
+                    Data = payStackResponse.Data.AuthorizationUrl
+                };
+                    
             }
-            return payStackResponse.Message;
+            return new Core.DTOs.Responses.ApiResponse<string>
+            {
+                IsSuccessful = true,
+                Message = payStackResponse.Message
+            };
         }
 
         public async Task<Core.DTOs.Responses.ApiResponse<PaymentResponseDto>> UpdateAsync(string referenceNo, UpdatePaymentRequestDto request)
@@ -208,7 +218,7 @@ namespace App.Infrastructure.ExternalServices
             return (fee, entityName);
         }
 
-        public async Task<string> VerifyPayment(string referenceNo)
+        public async Task<Core.DTOs.Responses.ApiResponse<string>> VerifyPaymentAsync(string referenceNo)
         {
             TransactionVerifyResponse response = PayStack.Transactions.Verify(referenceNo);
             if (response.Data.Status == "success")
@@ -219,10 +229,18 @@ namespace App.Infrastructure.ExternalServices
                     payment.Status = Core.Enums.PaymentStatus.Successful;
                     _paymentRepository.Update(payment);
                     await _unitOfWork.SaveAsync();
-                    return "success";
+                    return new Core.DTOs.Responses.ApiResponse<string>
+                    {
+                        IsSuccessful = true,
+                        Message = response.Message
+                    };
                 }
             }
-            return response.Data.GatewayResponse;
+            return new Core.DTOs.Responses.ApiResponse<string>
+            {
+                IsSuccessful = true,
+                Message = response.Data.GatewayResponse
+            };
         }
     }
 }

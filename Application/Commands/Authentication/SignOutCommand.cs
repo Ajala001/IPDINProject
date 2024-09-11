@@ -1,7 +1,7 @@
 ﻿using App.Application.IExternalServices;
 using MediatR;
 
-namespace App.Application.Commands.User
+namespace App.Application.Commands.Authentication
 {
     public record SignOutCommand() : IRequest;
 

@@ -2,7 +2,6 @@
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
-using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using App.Infrastructure.Identity;
 using Microsoft.AspNetCore.Http;
@@ -15,18 +14,30 @@ namespace App.Application.Services
     public class RoleService(RoleManager<Role> roleManager, IHttpContextAccessor contextAccessor, 
             UserManager<User> userManager) : IRoleService
     {
-        public async Task<bool> AddUserRoleAsync(User user, string roleName)
+        public async Task<ApiResponse<RoleResponseDto>> AddUserRoleAsync(User user, string roleName)
         {
             var role = await roleManager.FindByNameAsync(roleName);
-            if (role != null)
+            if (role == null) return new ApiResponse<RoleResponseDto>
             {
-                var result = await userManager.AddToRoleAsync(user, roleName);
-                return result.Succeeded;
-            }
-            return false;
+                IsSuccessful = false,
+                Message = "Role not found"
+            };
+
+            var result = await userManager.AddToRoleAsync(user, roleName);
+            if(result.Succeeded) return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Role assigned to User successfully"
+            };
+
+            return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Role not assigned"
+            };
         }
 
-        public async Task<IdentityResult> CreateAsync(CreateRoleRequestDto request)
+        public async Task<ApiResponse<RoleResponseDto>> CreateAsync(CreateRoleRequestDto request)
         {
             var loginUser = contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var role = new Role()
@@ -38,7 +49,18 @@ namespace App.Application.Services
                 CreatedOn = DateTime.Now
             };
             var roleCreated = await roleManager.CreateAsync(role);
-            return roleCreated;
+            if(roleCreated.Succeeded) return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Role created successfully"
+            };
+
+            return new ApiResponse<RoleResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Role not created"
+            };
+
         }
 
         public async Task<ApiResponse<RoleResponseDto>> DeleteAsync(string roleName)

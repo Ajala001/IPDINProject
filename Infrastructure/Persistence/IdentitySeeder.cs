@@ -43,7 +43,7 @@ namespace App.Infrastructure.Persistence
             }
 
             // Seed users
-            if (await _userManager.FindByNameAsync("admin@gmail.com") == null)
+            if (await _userManager.FindByNameAsync("admin@example.com") == null)
             {
                 var admin = new User
                 {

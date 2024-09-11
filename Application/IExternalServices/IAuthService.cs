@@ -1,12 +1,15 @@
 ﻿using App.Core.DTOs.Requests.CreateRequestDtos;
-using Microsoft.AspNetCore.Identity;
+using App.Core.DTOs.Responses;
 
 namespace App.Application.IExternalServices
 {
     public interface IAuthService
     {
-        Task<string> SignInAsync(SignInRequestDto request);
+        Task<ApiResponse<string>> SignInAsync(SignInRequestDto request);
         Task SignOutAsync();
-        Task<IdentityResult> SignUpAsync(SignUpRequestDto request);
+        Task<ApiResponse<UserResponseDto>> SignUpAsync(SignUpRequestDto request);
+        Task<ApiResponse<UserResponseDto>> ConfirmEmailAsync(string email, string token);
+        Task<ApiResponse<UserResponseDto>> ForgetPasswordAsync(string email);
+        Task<ApiResponse<UserResponseDto>> ResetPasswordAsync(ResetPasswordRequestDto request);
     }
 }

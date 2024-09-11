@@ -1,9 +1,7 @@
 ﻿using App.Application.IExternalServices;
-using App.Core.Interfaces;
 using App.Core.Interfaces.Repositories;
 using App.Infrastructure.Data;
 using App.Infrastructure.ExternalServices;
-using App.Infrastructure.Identity;
 using App.Infrastructure.Persistence;
 using App.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;

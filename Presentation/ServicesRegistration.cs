@@ -5,6 +5,7 @@ using App.Infrastructure;
 using App.Infrastructure.ExternalServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 namespace App.Presentation
@@ -13,25 +14,75 @@ namespace App.Presentation
     {
         public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddAuthentication(option =>
+
+            services.AddSwaggerGen(c =>
             {
-                option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-                .AddJwtBearer(option =>
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "IPDINProject", Version = "v1" });
+
+                // Configure Swagger to include security definitions
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    option.SaveToken = true;
-                    option.RequireHttpsMetadata = false;
-                    option.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidAudience = configuration["Jwt:ValidAudience"],
-                        ValidIssuer = configuration["Jwt:ValidIssuer"],
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
-                    };
+                    Description = "Please Enter a valid Token",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer"
                 });
+
+                // Configure Swagger to use the JWT bearer token authentication
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    new string[] {}
+                }
+        });
+            });
+
+            
+
+
+
+
+
+
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidAudience = configuration["Jwt:ValidAudience"],
+                    ValidIssuer = configuration["Jwt:ValidIssuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = (context) =>
+                    {
+                        return Task.CompletedTask;
+                    },
+                    OnForbidden = (context) =>
+                    {
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = (context) =>
+                    {
+                        return Task.CompletedTask;
+                    },
+                };
+            });
 
             services.AddScoped<IAppEnvironment, AppEnvironment>();
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));

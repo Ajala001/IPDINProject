@@ -17,9 +17,9 @@ namespace App.Application.Services
         IUnitOfWork unitOfWork, ILogger<ResultService> logger) : IResultService
     {
         
-        public async Task<ApiResponse<ResultResponseDto>> DeleteAsync(string userEmail)
+        public async Task<ApiResponse<ResultResponseDto>> DeleteAsync(string membershipNumber)
         {
-            var result = await resultRepository.GetResultAsync(r => r.User.Email == userEmail);
+            var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber);
             if (result == null) return new ApiResponse<ResultResponseDto>
             {
                 IsSuccessful = false,
@@ -38,9 +38,9 @@ namespace App.Application.Services
             };
         }
 
-        public async Task<ApiResponse<ResultResponseDto>> GetResultAsync(string userEmail)
+        public async Task<ApiResponse<ResultResponseDto>> GetResultAsync(string membershipNumber)
         {
-            var result = await resultRepository.GetResultAsync(r => r.User.Email == userEmail);
+            var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber);
             if (result == null) return new ApiResponse<ResultResponseDto>
             {
                 IsSuccessful = false,
@@ -90,7 +90,7 @@ namespace App.Application.Services
             };
         }
 
-        public Task<ApiResponse<ResultResponseDto>> UpdateAsync(string userEmail, UpdateResultRequestDto request)
+        public Task<ApiResponse<ResultResponseDto>> UpdateAsync(string membershipNumber, UpdateResultRequestDto request)
         {
             throw new NotImplementedException();
         }

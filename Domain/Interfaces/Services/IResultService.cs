@@ -7,9 +7,9 @@ namespace App.Core.Interfaces.Services
     public interface IResultService
     {
         Task<ApiResponse<IEnumerable<ResultResponseDto>>> UploadResultAsync(IFormFile file);
-        Task<ApiResponse<ResultResponseDto>> UpdateAsync(string userEmail, UpdateResultRequestDto request);
-        Task<ApiResponse<ResultResponseDto>> DeleteAsync(string userEmail);
+        Task<ApiResponse<ResultResponseDto>> UpdateAsync(string membershipNumber, UpdateResultRequestDto request);
+        Task<ApiResponse<ResultResponseDto>> DeleteAsync(string membershipNumber);
         Task<ApiResponse<IEnumerable<ResultResponseDto>>> GetResultsAsync();
-        Task<ApiResponse<ResultResponseDto>> GetResultAsync(string userEmail);
+        Task<ApiResponse<ResultResponseDto>> GetResultAsync(string membershipNumber);
     }
 }

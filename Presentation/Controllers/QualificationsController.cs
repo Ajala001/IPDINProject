@@ -8,29 +8,34 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
+    [Route("api/qualification")]
     [ApiController]
-    [Authorize]
     public class QualificationsController(ISender sender) : ControllerBase
     {
-        [HttpPost("")] //the default route
+        [HttpPost]
         public async Task<IActionResult> AddAcademicQualificationAsync([FromBody] CreateAcademicQualificationRequestDto request)
         {
             var result = await sender.Send(new AddAcademicQualificationCommand(request));
+            if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }
 
-        [HttpGet("")]
+       
+        [HttpGet]
         public async Task<IActionResult> GetAllAcademicQualificationAsync()
         {
             var result = await sender.Send(new GetAllAcademicQualificationQuery());
+            if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }
+
 
         [HttpGet("{qualificationId}")]
         public async Task<IActionResult> GetAcademicQualificationByIdAsync([FromRoute] Guid qualificationId)
         {
             var result = await sender.Send(new GetAcademicQualificationByIdQuery(qualificationId));
+            if (!result.IsSuccessful) NotFound(result);
             return Ok(result);
         }
 
@@ -38,6 +43,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> UpdateAcademicQualificationAsync([FromRoute] Guid qualificationId, [FromBody] UpdateAcademicQualificationRequestDto updateRequest)
         {
             var result = await sender.Send(new UpdateAcademicQualificationCommand(qualificationId, updateRequest));
+            if (!result.IsSuccessful) NotFound(result);
             return Ok(result);
         }
 
@@ -45,6 +51,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> DeleteAcademicQualificationAsync([FromRoute] Guid qualificationId)
         {
             var result = await sender.Send(new DeleteAcademicQualificationCommand(qualificationId));
+            if (!result.IsSuccessful) NotFound(result);
             return Ok(result);
         }
     }

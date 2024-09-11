@@ -16,7 +16,8 @@ namespace App.Infrastructure.ExternalServices
             {
                 From = new MailAddress(_emailSettings.Email, _emailSettings.DisplayName),
                 Subject = request.Subject,
-                Body = request.Body
+                Body = request.Body,
+                IsBodyHtml = true
             };
 
             mailMessage.To.Add(request.ToEmail);  // Add recipient(s) here
