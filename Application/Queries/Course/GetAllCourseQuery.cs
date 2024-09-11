@@ -4,14 +4,14 @@ using MediatR;
 
 namespace App.Application.Queries.Course
 {
-    public record GetAllCourseQuery() : IRequest<ApiResponse<IEnumerable<AppApplicationResponseDto>>>;
+    public record GetAllCourseQuery() : IRequest<ApiResponse<IEnumerable<CourseResponseDto>>>;
 
-    public class GetAllCourseQueryHandler(IAppApplicationService appApplicationService)
-        : IRequestHandler<GetAllCourseQuery, ApiResponse<IEnumerable<AppApplicationResponseDto>>>
+    public class GetAllCourseQueryHandler(ICourseService courseService)
+        : IRequestHandler<GetAllCourseQuery, ApiResponse<IEnumerable<CourseResponseDto>>>
 {
-        public async Task<ApiResponse<IEnumerable<AppApplicationResponseDto>>> Handle(GetAllCourseQuery request, CancellationToken cancellationToken)
+        public async Task<ApiResponse<IEnumerable<CourseResponseDto>>> Handle(GetAllCourseQuery request, CancellationToken cancellationToken)
         {
-            return await appApplicationService.GetAppApplicationsAsync();
+            return await courseService.GetCoursesAsync();
         }
     }
 }

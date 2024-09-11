@@ -3,15 +3,16 @@ using App.Application.Queries.Payment;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
+    [Authorize(Roles = "Admin, Member")]
     [Route("api/payment")]
     [ApiController]
     public class PaymentController(ISender sender) : ControllerBase
     {
-
         [HttpGet]
         public async Task<IActionResult> GetAllPaymentAsync()
         {
@@ -20,7 +21,7 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
-
+       
         [HttpPost("initiatePayment")]
         public async Task<IActionResult> InitiatePaymentAsync([FromBody] CreatePaymentRequestDto request)
         {
@@ -47,7 +48,7 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
-
+        
         [HttpDelete("{referenceNo}")]
         public async Task<IActionResult> DeletePaymentAsync([FromRoute] string referenceNo)
         {

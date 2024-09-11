@@ -4,6 +4,7 @@ using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
@@ -12,6 +13,7 @@ namespace App.Presentation.Controllers
     [ApiController]
     public class ExaminationController(ISender sender) : ControllerBase
     {
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> AddExaminationAsync([FromBody] CreateExaminationRequestDto request)
         {
@@ -20,7 +22,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet]
         public async Task<IActionResult> GetAllExaminationAsync()
         {
@@ -30,7 +32,7 @@ namespace App.Presentation.Controllers
         }
 
 
-
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet("search")]
         public async Task<IActionResult> SearchForExaminationAsync([FromQuery] ExaminationSearchRequestDto searchRequestDto)
         {
@@ -39,7 +41,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet("{examId}")]
         public async Task<IActionResult> GetExaminationByIdAsync([FromRoute] Guid examId)
         {
@@ -48,7 +50,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("{examId}")]
         public async Task<IActionResult> UpdateExamintionAsync([FromRoute] Guid examId, [FromBody] UpdateExaminationRequestDto updateRequest)
         {
@@ -57,7 +59,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{examId}")]
         public async Task<IActionResult> DeleteExaminationAsync([FromRoute] Guid examId)
         {

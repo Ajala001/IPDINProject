@@ -2,6 +2,7 @@
 using App.Application.Queries.Result;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
@@ -10,7 +11,7 @@ namespace App.Presentation.Controllers
     [ApiController]
     public class ResultController(ISender sender) : ControllerBase
     {
-
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAllResultAsync()
         {
@@ -19,6 +20,7 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("uploadResult")]
         public async Task<ActionResult> UploadResultAsync(IFormFile file)
         {
@@ -27,6 +29,7 @@ namespace App.Presentation.Controllers
             return BadRequest(result);  
         }
 
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet("{membershipNumber}")]
         public async Task<IActionResult> GetResultAsync([FromRoute] string membershipNumber)
         {
@@ -35,7 +38,7 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("{membershipNumber}")]
         public async Task<IActionResult> UpdateResultAsync([FromRoute] string membershipNumber, UpdateResultRequestDto updateRequest)
         {
@@ -44,6 +47,7 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{membershipNumber}")]
         public async Task<IActionResult> DeleteResultAsync([FromRoute] string membershipNumber)
         {

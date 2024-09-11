@@ -4,6 +4,7 @@ using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
@@ -12,6 +13,7 @@ namespace App.Presentation.Controllers
     [ApiController]
     public class CourseController(ISender sender) : ControllerBase
     {
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> AddCourseAsync([FromBody] CreateCourseRequestDto request)
         {
@@ -20,7 +22,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet]
         public async Task<IActionResult> GetAllCourseAsync()
         {
@@ -29,7 +31,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet("search")]
         public async Task<IActionResult> SearchForCourseAsync([FromQuery] CourseSearchRequestDto searchRequestDto)
         {
@@ -38,7 +40,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet("{courseId}")]
         public async Task<IActionResult> GetCourseByIdAsync([FromRoute] Guid courseId)
         {
@@ -47,7 +49,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("{courseId}")]
         public async Task<IActionResult> UpdateCourseAsync([FromRoute] Guid courseId, [FromBody] UpdateCourseRequestDto updateRequest)
         {
@@ -56,7 +58,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{courseId}")]
         public async Task<IActionResult> DeleteCourseAsync([FromRoute] Guid courseId)
         {

@@ -3,10 +3,12 @@ using App.Application.Queries.Role;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [Route("api/role")]
     [ApiController]
     public class RoleController(ISender sender) : ControllerBase

@@ -96,34 +96,6 @@ namespace App.Infrastructure.ExternalServices
             await signInManager.SignOutAsync();
         }
 
-
-        private async Task<string> GenerateToken(User user)
-        {
-            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
-            var credential = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-
-            var roles = await userManager.GetRolesAsync(user);
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-                new Claim("Surname", user.LastName),
-                new Claim("GivenName", user.FirstName),
-                new Claim("NameIdentifier", user.UserName),
-                new Claim("Email", user.Email)
-            };
-            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-
-            var token = new JwtSecurityToken(
-                issuer: configuration["Jwt:ValidIssuer"],
-                audience: configuration["Jwt:ValidAudience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: credential);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         public async Task<ApiResponse<UserResponseDto>> ConfirmEmailAsync(string email, string token)
         {
             var user = await userManager.FindByEmailAsync(email);
@@ -212,6 +184,33 @@ namespace App.Infrastructure.ExternalServices
                 IsSuccessful = false,
                 Message = "Something went wrong"
             };
+        }
+
+        private async Task<string> GenerateToken(User user)
+        {
+            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
+            var credential = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+            var roles = await userManager.GetRolesAsync(user);
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new Claim("Surname", user.LastName),
+                new Claim("GivenName", user.FirstName),
+                new Claim("NameIdentifier", user.UserName),
+                new Claim("Email", user.Email)
+            };
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+
+            var token = new JwtSecurityToken(
+                issuer: configuration["Jwt:ValidIssuer"],
+                audience: configuration["Jwt:ValidAudience"],
+                claims: claims,
+                expires: DateTime.Now.AddDays(1),
+                signingCredentials: credential);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private static string GenerateMembershipNumber()
