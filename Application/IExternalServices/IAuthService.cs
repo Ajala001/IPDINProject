@@ -11,5 +11,6 @@ namespace App.Application.IExternalServices
         Task<ApiResponse<UserResponseDto>> ConfirmEmailAsync(string email, string token);
         Task<ApiResponse<UserResponseDto>> ForgetPasswordAsync(string email);
         Task<ApiResponse<UserResponseDto>> ResetPasswordAsync(ResetPasswordRequestDto request);
+        Task<ApiResponse<string>> ResendEmailConfirmationToken(string email);
     }
 }

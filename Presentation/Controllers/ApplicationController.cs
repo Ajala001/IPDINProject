@@ -14,7 +14,7 @@ namespace App.Presentation.Controllers
     public class ApplicationController(ISender sender) : ControllerBase
     {
         [HttpPost]
-        public async Task<IActionResult> AddApplicationAsycn([FromBody] CreateAppApplicationRequestDto request)
+        public async Task<IActionResult> AddApplicationAsync([FromBody] CreateAppApplicationRequestDto request)
         {
             var result = await sender.Send(new AddAppApplicationCommand(request));
             if (!result.IsSuccessful) return NotFound(result);

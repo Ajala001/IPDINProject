@@ -7,5 +7,6 @@ namespace App.Application.IExternalServices
     {
         MailMessage CreateMailMessage(MailRequestDto request);
         void SendEmail(MailMessage mailMessage);
+        string CreateBody(string userName, string appName, string confimationLink);
     }
 }

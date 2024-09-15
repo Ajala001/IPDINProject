@@ -44,22 +44,29 @@ namespace App.Infrastructure.ExternalServices
                 var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
                 string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={newUser.Email}&token={validEmailToken}";
+                string userFullName = $"{newUser.FirstName} {newUser.LastName}";
                 var mailRequestDto = new MailRequestDto
                 {
                     ToEmail = newUser.Email,
                     Subject = "Confirm Your Email",
-                    Body = "<h1>Welcome to IPDIN</h1>" + "<p>Please confirm your email by <a href=\"" + url + "\">Clicking Here</a></p>"
+                    Body = emailService.CreateBody(userFullName, "IPDIN DrivingSchool", url)
                 };
                 emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
                 newUser.MembershipNumber = GenerateMembershipNumber();
                 await userManager.UpdateAsync(newUser);
+                return new ApiResponse<UserResponseDto>
+                {
+                    IsSuccessful = true,
+                    Message = "Registration successful and a confirmation email sent to you"
+                };
             }
             return new ApiResponse<UserResponseDto>
             {
-                IsSuccessful = true,
-                Message = "Registration successful and a confirmation email sent to you"
+                IsSuccessful = false,
+                Message = "Registration Failed"
             };
         }
+
 
         public async Task<ApiResponse<string>> SignInAsync(SignInRequestDto request)
         {
@@ -73,7 +80,7 @@ namespace App.Infrastructure.ExternalServices
             if (!user.EmailConfirmed) return new ApiResponse<string>
             {
                 IsSuccessful = false,
-                Message = "Please confirm your email before signining in"
+                Message = "Please confirm your email before signing in"
             };
 
             var result = await signInManager.PasswordSignInAsync(request.MembershipNumber, request.Password, request.RememberMe, false);
@@ -90,6 +97,7 @@ namespace App.Infrastructure.ExternalServices
                 Data = await GenerateToken(user)
             };
         }
+
 
         public async Task SignOutAsync()
         {
@@ -113,7 +121,7 @@ namespace App.Infrastructure.ExternalServices
             if(result.Succeeded) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Email Confirmation Successfull"
+                Message = "Email Confirmation Successful"
             };
 
             return new ApiResponse<UserResponseDto>
@@ -123,6 +131,7 @@ namespace App.Infrastructure.ExternalServices
                 Data = null
             };
         }
+
 
         public async Task<ApiResponse<UserResponseDto>> ForgetPasswordAsync(string email)
         {
@@ -137,7 +146,7 @@ namespace App.Infrastructure.ExternalServices
             var token = await userManager.GeneratePasswordResetTokenAsync(user);
             var encodedEmailToken = Encoding.UTF8.GetBytes(token);
             var validToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
-            string url = $"{configuration["AppUrl"]}/api/auth/resetPassword?email={email}&token={validToken}";
+            string url = $"{configuration["AngularUrl"]}/reset-password?email={email}&token={validToken}";
 
             var mailRequestDto = new MailRequestDto
             {
@@ -153,6 +162,7 @@ namespace App.Infrastructure.ExternalServices
                 Message = "Reset Password URl has been sent to your Email successfully"
             };
         }
+
 
         public async Task<ApiResponse<UserResponseDto>> ResetPasswordAsync(ResetPasswordRequestDto request)
         {
@@ -185,6 +195,7 @@ namespace App.Infrastructure.ExternalServices
                 Message = "Something went wrong"
             };
         }
+
 
         private async Task<string> GenerateToken(User user)
         {
@@ -222,5 +233,50 @@ namespace App.Infrastructure.ExternalServices
             int year = rand.Next(2000, 2026);
             return $"{letters}/{year}";
         }
+
+        public async Task<ApiResponse<string>> ResendEmailConfirmationToken(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return new ApiResponse<string>
+            {
+                IsSuccessful = false,
+                Message = "Email is required",
+                Data = null
+            };
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null) return new ApiResponse<string>
+            {
+                IsSuccessful = false,
+                Message = "Email not registered",
+                Data = null
+            };
+
+            if(await userManager.IsEmailConfirmedAsync(user)) return new ApiResponse<string>
+            {
+                IsSuccessful = false,
+                Message = "Email already confirmed",
+                Data = null
+            };
+
+            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedEmailToken = Encoding.UTF8.GetBytes(token);
+            var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
+
+            string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
+            var mailRequestDto = new MailRequestDto
+            {
+                ToEmail = user.Email!,
+                Subject = "Confirm Your Email",
+                Body = "<h1>Welcome to IPDIN</h1>" + "<p>Please confirm your email by <a href=\"" + url + "\">Clicking Here</a></p>"
+            };
+            emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
+            return new ApiResponse<string>
+            {
+                IsSuccessful = true,
+                Message = "A confirmation link as been sent to you"
+            };
+        }
+
+
     }
 }

@@ -56,7 +56,7 @@ builder.Services.AddIdentity<User, Role>(options =>
 
 var app = builder.Build();
 
-
+app.UseCors("AllowSpecificOrigin");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

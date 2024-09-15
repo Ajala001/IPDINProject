@@ -1,15 +1,22 @@
 ﻿using App.Application.IExternalServices;
 using App.Core.DTOs.Requests.CreateRequestDtos;
+using App.Core.Interfaces;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 
 namespace App.Infrastructure.ExternalServices
 {
-    public class EmailService(IOptions<EmailSettings> emailSettings) : IEmailService
+    public class EmailService: IEmailService
     {
-        private readonly EmailSettings _emailSettings = emailSettings.Value;
+        private readonly IAppEnvironment _appEnvironment;
+        private readonly EmailSettings _emailSettings;
 
+        public EmailService(IAppEnvironment appEnvironment, IOptions<EmailSettings> emailSettings)
+        {
+            _appEnvironment = appEnvironment;
+            _emailSettings = emailSettings.Value;
+        }
         public MailMessage CreateMailMessage(MailRequestDto request)
         {
             MailMessage mailMessage = new MailMessage
@@ -33,6 +40,28 @@ namespace App.Infrastructure.ExternalServices
                 smtpClient.EnableSsl = true;
                 smtpClient.Send(mailMessage);
             }
+        }
+
+        public string CreateBody(string userName, string appName, string confimationLink)
+        {
+            var filePath = Path.Combine(_appEnvironment.WebRootPath, "html", "ConfirmationEmailTemplate.html");
+            if (!File.Exists(filePath))
+            {
+                return "Path not found";
+            }
+
+
+            string body = string.Empty;
+            using (StreamReader reader = new StreamReader(filePath))
+            {
+                body = reader.ReadToEnd();
+            }
+
+            body = body.Replace("{{UserName}}", userName);
+            body = body.Replace("{{AppName}}", appName);
+            body = body.Replace("{{ConfirmationLink}}", confimationLink);
+
+            return body;
         }
     }
 }

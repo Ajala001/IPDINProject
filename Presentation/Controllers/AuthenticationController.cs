@@ -7,7 +7,7 @@ namespace App.Presentation.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthenticationController(ISender sender) : ControllerBase
+    public class AuthenticationController(ISender sender, IConfiguration configuration) : ControllerBase
     {
 
         [HttpPost("signUp")] 
@@ -15,14 +15,14 @@ namespace App.Presentation.Controllers
         {
             var result = await sender.Send(new SignUpCommand(request));
             if (!result.IsSuccessful) return BadRequest(result);
-            return Ok(result.Message);
+            return Ok(result);
         }
 
         [HttpPost("signIn")]
         public async Task<IActionResult> SignInAsync([FromBody] SignInRequestDto request)
         {
             var result = await sender.Send(new SignInCommand(request));
-            if (result == null) return BadRequest(result);
+            if (!result.IsSuccessful) return BadRequest(result);
             return Ok(result);
         }
 
@@ -40,7 +40,7 @@ namespace App.Presentation.Controllers
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token)) return BadRequest();
             var result = await sender.Send(new ConfirmEmailCommand(email, token));
-            if(result.IsSuccessful) return Ok(result);
+            if(result.IsSuccessful) return Redirect($"{configuration["AngularUrl"]}/confirmation-page");
             return BadRequest(result);
         }
 
@@ -48,29 +48,25 @@ namespace App.Presentation.Controllers
         [HttpPost("forgetPassword")]
         public async Task<IActionResult> ForgetPassword(string email)
         {
-            if (string.IsNullOrWhiteSpace(email)) return BadRequest();
+            if (string.IsNullOrWhiteSpace(email)) return NotFound();
             var result = await sender.Send(new ForgetPasswordCommand(email));
             if (result.IsSuccessful) return Ok(result);
             return BadRequest(result);
         }
 
 
-        [HttpGet("resetPassword")]
-        public IActionResult ResetPassword([FromQuery] string email, [FromQuery] string token)
+        [HttpPost("resendConfirmationToken")]
+        public async Task<IActionResult> ResendEmailConfirmationToken(string email)
         {
-            var resetPasswordDto = new ResetPasswordRequestDto
-            {
-                Email = email,
-                Token = token
-            };
-
-            return Ok(resetPasswordDto);
+            if (string.IsNullOrWhiteSpace(email)) return BadRequest();
+            var result = await sender.Send(new ResendEmailConfirmationTokenCommand(email));
+            if (result.IsSuccessful) return Ok(result);
+            return BadRequest(result);
         }
 
 
-
         [HttpPost("resetPassword")]
-        public async Task<IActionResult> ResetPassword([FromForm] ResetPasswordRequestDto request)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
         {
             if (!ModelState.IsValid) return BadRequest("Something went wrong");
             var result = await sender.Send(new ResetPasswordCommand(request));
