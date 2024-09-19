@@ -4,11 +4,10 @@
     {
         public required string ExamTitle { get; set; }
         public DateTime ExamDateAndTime { get; set; }
-        public DateOnly ExamYear { get; set; }
-        public required Guid CourseId { get; set; }
-        public required Course Course { get; set; }
+        public short ExamYear { get; set; }
         public required int Fee { get; set; }
-        public ICollection<Result> Results { get; set; } = new List<Result>();
+        public Result? Result { get; set; }
+        public ICollection<Course> Courses { get; set; } = new List<Course>();
         public ICollection<UserExaminations> Examinations { get; set; } = new List<UserExaminations>();
     }
 }

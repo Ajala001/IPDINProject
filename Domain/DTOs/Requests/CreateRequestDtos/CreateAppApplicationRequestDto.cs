@@ -2,6 +2,7 @@
 {
     public class CreateAppApplicationRequestDto
     {
-        public required string ApplicationPurpose { get; set; } // reason for making the application
+        public Guid? ExaminationId { get; set; }
+        public Guid? TrainingId { get; set; }
     }
 }

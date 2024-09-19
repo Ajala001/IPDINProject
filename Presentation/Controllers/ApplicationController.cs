@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "PaidDuesOnly", Roles = "Admin, Member")]
     [Route("api/application")]
     [ApiController]
     public class ApplicationController(ISender sender) : ControllerBase
@@ -17,7 +17,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> AddApplicationAsync([FromBody] CreateAppApplicationRequestDto request)
         {
             var result = await sender.Send(new AddAppApplicationCommand(request));
-            if (!result.IsSuccessful) return NotFound(result);
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }
 
@@ -26,7 +26,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> GetAllApplicationAsync()
         {
             var result = await sender.Send(new GetAllAppApplicationsQuery());
-            if (!result.IsSuccessful) return NotFound(result);
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }
 
@@ -35,7 +35,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> GetApplicationByIdAsync([FromRoute] Guid applicationId)
         {
             var result = await sender.Send(new GetAppApplicationByIdQuery(applicationId));
-            if (!result.IsSuccessful) return NotFound(result);
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }
 
@@ -44,7 +44,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> UpdateApplicationAsync([FromRoute] Guid applicationId, [FromBody] UpdateAppApplicationRequestDto updateRequest)
         {
             var result = await sender.Send(new UpdateAppApplicationCommand(applicationId, updateRequest));
-            if (!result.IsSuccessful) return NotFound(result);
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }
 
@@ -53,7 +53,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> DeleteApplicationAsync([FromRoute] Guid applicationId)
         {
             var result = await sender.Send(new DeleteAppApplicationCommand(applicationId));
-            if (!result.IsSuccessful) return NotFound(result);
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }
     }

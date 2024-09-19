@@ -1,6 +1,4 @@
-﻿using App.Core.DTOs.Requests.CreateRequestDtos;
-using App.Core.Entities;
-using App.Core.Enums;
+﻿using App.Core.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace App.Core.DTOs.Requests.UpdateRequestDtos
@@ -14,7 +12,6 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
         public string? Email { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public IFormFile? ProfilePic { get; set; }
-        public UserCategory? Category { get; set; }
         public short? StreetNo { get; set; }
         public string? StreetName { get; set; }
         public string? City { get; set; }
@@ -27,6 +24,5 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
         public DateTime? ExpiringDate { get; set; }
         public short? YearsOfExperience { get; set; }
         public string? NameOfCurrentDrivingSchool { get; set; }
-        public IEnumerable<AcademicQualification>? AcademicQualifications { get; set; }
     }
 }

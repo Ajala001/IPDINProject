@@ -1,9 +1,11 @@
 ﻿using App.Core.Entities;
+using App.Infrastructure.Data;
 using App.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 namespace App.Infrastructure.Persistence
 {
-    public class IdentitySeeder(UserManager<User> userManager, RoleManager<Role> roleManager)
+    public class IdentitySeeder(UserManager<User> userManager, RoleManager<Role> roleManager, IPDINDbContext dbContext)
     {
         private readonly UserManager<User> _userManager = userManager;
         private readonly RoleManager<Role> _roleManager = roleManager;
@@ -42,6 +44,24 @@ namespace App.Infrastructure.Persistence
                 }
             }
 
+            // Seed RegistrationType
+            RegistrationType registrationType = null;
+            if (!await dbContext.RegistrationTypes.AnyAsync(rt => rt.Name == "Fellow"))
+            {
+                registrationType = new RegistrationType
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Fellow",
+                    Dues = 2000000,
+                    CreatedBy = "Admin",
+                    CreatedOn = DateTime.Now
+                };
+
+                await dbContext.RegistrationTypes.AddAsync(registrationType);
+                await dbContext.SaveChangesAsync();
+            }
+
+
             // Seed users
             if (await _userManager.FindByNameAsync("admin@example.com") == null)
             {
@@ -55,6 +75,14 @@ namespace App.Infrastructure.Persistence
                     EmailConfirmed = true,
                     Gender = Core.Enums.Gender.Male,
                     DateOfBirth = DateTime.Now,
+                    Country = "Nigeria",
+                    StateOfResidence = "Ogun",
+                    DriverLicenseNo = "0123HG",
+                    YearIssued = 2024,
+                    ExpiringDate = DateTime.Now,
+                    YearsOfExperience = 5,
+                    NameOfCurrentDrivingSchool = "IPDIN",
+                    RegistrationTypeId = registrationType!.Id,
                     CreatedOn = DateTime.Now,
                     CreatedBy = "Admin"
                 };

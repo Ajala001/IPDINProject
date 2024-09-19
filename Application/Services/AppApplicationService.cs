@@ -11,7 +11,8 @@ using System.Security.Claims;
 namespace App.Application.Services
 {
     public class AppApplicationService(IHttpContextAccessor httpContextAccessor, UserManager<User> userManager,
-        IAppApplicationRepository applicationRepository, IUnitOfWork unitOfWork) 
+        IAppApplicationRepository applicationRepository, IUnitOfWork unitOfWork, ITrainingRepository trainingRepository,
+        IExaminationRepository examinationRepository) 
         : IAppApplicationService
     {
         public async Task<ApiResponse<AppApplicationResponseDto>> CreateAsync(CreateAppApplicationRequestDto request)
@@ -20,22 +21,31 @@ namespace App.Application.Services
             var user = await userManager.FindByEmailAsync(loginUser!);
             var appApplication = new AppApplication
             {
+                Id = Guid.NewGuid(),
                 UserId = user!.Id,
                 User = user,
-                ApplicationPurpose = request.ApplicationPurpose,
+                ExaminationId = request.ExaminationId,
                 Status = Core.Enums.ApplicationStatus.Pending,
                 Date = DateTime.Now,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
             };
+            if(request.TrainingId != null)
+            {
+                appApplication.TrainingId = request.TrainingId;
+                var training = await trainingRepository.GetTrainingAsync(tr => tr.Id == request.TrainingId);
+                appApplication.ApplicationPurpose = training.Title;
+            } else
+                appApplication.ExaminationId = request.ExaminationId;
+                var examination = await examinationRepository.GetExaminationAsync(e => e.Id == request.ExaminationId);
+                appApplication.ApplicationPurpose = examination.ExamTitle;
 
             await applicationRepository.CreateAsync(appApplication);
             await unitOfWork.SaveAsync();
-
             return new ApiResponse<AppApplicationResponseDto>
-            { 
+            {
                 IsSuccessful = true,
-                Message = "Application Submitted Successdully",
+                Message = "Application Submitted Successfully",
                 Data = new AppApplicationResponseDto
                 {
                     Id = appApplication.Id,
@@ -63,7 +73,7 @@ namespace App.Application.Services
             return new ApiResponse<AppApplicationResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Application Deleted Succesfully",
+                Message = "Application Deleted Successfully",
                 Data = null
             };
         }

@@ -11,6 +11,7 @@ namespace App.Core.Interfaces.Repositories
         Task<IEnumerable<Course>> GetCoursesAsync();
         Task<IEnumerable<Course>> SearchCourseAsync(string courseTitle, string courseCode);
         Task<Course> GetCourseAsync(Expression<Func<Course, bool>> predicate);
+        Task<ICollection<Course>> GetSelectedAsync(Expression<Func<Course, bool>> predicate);
 
     }
 }

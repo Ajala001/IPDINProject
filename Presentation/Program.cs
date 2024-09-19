@@ -11,14 +11,14 @@ var configuration = builder.Configuration;
 
 
 // Configure Kestrel to listen on all network interfaces
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(5067); // HTTP port
-    options.ListenAnyIP(7237, listenOptions =>
-    {
-        listenOptions.UseHttps(); // HTTPS port
-    });
-});
+//builder.WebHost.ConfigureKestrel(options =>
+//{
+//    options.ListenAnyIP(5067); // HTTP port
+//    options.ListenAnyIP(7237, listenOptions =>
+//    {
+//        listenOptions.UseHttps(); // HTTPS port
+//    });
+//});
 
 // Add services to the container.
 
@@ -33,24 +33,7 @@ builder.Services.AddPresentation(configuration);
 
 
 
-builder.Services.AddIdentity<User, Role>(options =>
-{
-    // Identity options configuration
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 8;
-    options.Password.RequiredUniqueChars = 1;
-    options.SignIn.RequireConfirmedEmail = true;
 
-    // Lockout settings
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.MaxFailedAccessAttempts = 5;
-    options.Lockout.AllowedForNewUsers = true;
-})
-            .AddEntityFrameworkStores<IPDINDbContext>()
-            .AddDefaultTokenProviders();
 
 
 

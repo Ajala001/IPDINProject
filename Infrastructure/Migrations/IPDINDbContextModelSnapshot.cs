@@ -65,7 +65,6 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<string>("ApplicationPurpose")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("CreatedBy")
@@ -78,6 +77,9 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid?>("ExaminationId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
 
@@ -86,6 +88,9 @@ namespace App.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<Guid?>("TrainingId")
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
@@ -122,6 +127,9 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid>("ExaminationId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
 
@@ -133,6 +141,8 @@ namespace App.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ExaminationId");
+
                     b.ToTable("Courses");
                 });
 
@@ -140,9 +150,6 @@ namespace App.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("CourseId")
                         .HasColumnType("char(36)");
 
                     b.Property<string>("CreatedBy")
@@ -159,8 +166,8 @@ namespace App.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateOnly>("ExamYear")
-                        .HasColumnType("date");
+                    b.Property<short>("ExamYear")
+                        .HasColumnType("smallint");
 
                     b.Property<int>("Fee")
                         .HasColumnType("int");
@@ -172,8 +179,6 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
 
                     b.ToTable("Examinations");
                 });
@@ -221,6 +226,37 @@ namespace App.Infrastructure.Migrations
                     b.ToTable("Payments");
                 });
 
+            modelBuilder.Entity("App.Core.Entities.RegistrationType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Dues")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RegistrationTypes");
+                });
+
             modelBuilder.Entity("App.Core.Entities.Result", b =>
                 {
                     b.Property<Guid>("Id")
@@ -255,7 +291,8 @@ namespace App.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExaminationId");
+                    b.HasIndex("ExaminationId")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -326,9 +363,6 @@ namespace App.Infrastructure.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<int?>("Category")
-                        .HasColumnType("int");
-
                     b.Property<string>("City")
                         .HasColumnType("longtext");
 
@@ -337,6 +371,7 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Country")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("CreatedBy")
@@ -346,10 +381,11 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime?>("DateOfBirth")
+                    b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("DriverLicenseNo")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("Email")
@@ -359,7 +395,7 @@ namespace App.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<DateTime?>("ExpiringDate")
+                    b.Property<DateTime>("ExpiringDate")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("FirstName")
@@ -368,6 +404,9 @@ namespace App.Infrastructure.Migrations
 
                     b.Property<int>("Gender")
                         .HasColumnType("int");
+
+                    b.Property<bool>("HasPaidDues")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -392,6 +431,7 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("NameOfCurrentDrivingSchool")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("NormalizedEmail")
@@ -414,6 +454,9 @@ namespace App.Infrastructure.Migrations
                     b.Property<string>("ProfilePic")
                         .HasColumnType("longtext");
 
+                    b.Property<Guid>("RegistrationTypeId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("longtext");
 
@@ -421,6 +464,7 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("StateOfResidence")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("StreetName")
@@ -436,10 +480,10 @@ namespace App.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<short?>("YearIssued")
+                    b.Property<short>("YearIssued")
                         .HasColumnType("smallint");
 
-                    b.Property<short?>("YearsOfExperience")
+                    b.Property<short>("YearsOfExperience")
                         .HasColumnType("smallint");
 
                     b.HasKey("Id");
@@ -450,6 +494,8 @@ namespace App.Infrastructure.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("RegistrationTypeId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -679,15 +725,15 @@ namespace App.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("App.Core.Entities.Examination", b =>
+            modelBuilder.Entity("App.Core.Entities.Course", b =>
                 {
-                    b.HasOne("App.Core.Entities.Course", "Course")
-                        .WithMany("Examinations")
-                        .HasForeignKey("CourseId")
+                    b.HasOne("App.Core.Entities.Examination", "Examination")
+                        .WithMany("Courses")
+                        .HasForeignKey("ExaminationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Course");
+                    b.Navigation("Examination");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Payment", b =>
@@ -704,8 +750,8 @@ namespace App.Infrastructure.Migrations
             modelBuilder.Entity("App.Core.Entities.Result", b =>
                 {
                     b.HasOne("App.Core.Entities.Examination", "Examination")
-                        .WithMany("Results")
-                        .HasForeignKey("ExaminationId")
+                        .WithOne("Result")
+                        .HasForeignKey("App.Core.Entities.Result", "ExaminationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -718,6 +764,17 @@ namespace App.Infrastructure.Migrations
                     b.Navigation("Examination");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("App.Core.Entities.User", b =>
+                {
+                    b.HasOne("App.Core.Entities.RegistrationType", "RegistrationType")
+                        .WithMany("Users")
+                        .HasForeignKey("RegistrationTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RegistrationType");
                 });
 
             modelBuilder.Entity("App.Core.Entities.UserAcademicQualifications", b =>
@@ -855,15 +912,20 @@ namespace App.Infrastructure.Migrations
             modelBuilder.Entity("App.Core.Entities.Course", b =>
                 {
                     b.Navigation("Courses");
-
-                    b.Navigation("Examinations");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Examination", b =>
                 {
+                    b.Navigation("Courses");
+
                     b.Navigation("Examinations");
 
-                    b.Navigation("Results");
+                    b.Navigation("Result");
+                });
+
+            modelBuilder.Entity("App.Core.Entities.RegistrationType", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Training", b =>

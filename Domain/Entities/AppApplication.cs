@@ -6,7 +6,9 @@ namespace App.Core.Entities
     {
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
-        public required string ApplicationPurpose { get; set; } // reason for making the application
+        public Guid? ExaminationId { get; set; }
+        public Guid? TrainingId { get; set; }
+        public string? ApplicationPurpose { get; set; }
         public DateTime Date { get; set; }
         public ApplicationStatus Status { get; set; }
     }

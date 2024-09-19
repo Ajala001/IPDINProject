@@ -2,6 +2,7 @@
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
+using App.Core.Interfaces.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ using System.Text;
 namespace App.Infrastructure.ExternalServices
 {
     public class AuthService(UserManager<User> userManager, SignInManager<User> signInManager,
-        IConfiguration configuration, IEmailService emailService) : IAuthService
+        IConfiguration configuration, IEmailService emailService, IUnitOfWork unitOfWork) : IAuthService
     {
         public async Task<ApiResponse<UserResponseDto>> SignUpAsync(SignUpRequestDto request)
         {
@@ -27,33 +28,51 @@ namespace App.Infrastructure.ExternalServices
            
             var newUser = new User
             {
+                Id = Guid.NewGuid(),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
                 UserName = request.Email,
                 Gender = request.Gender,
+                DateOfBirth = request.DateOfBirth,
+                Country = request.Country,
+                StateOfResidence = request.StateOfResidence,
+                DriverLicenseNo = request.DriverLicenseNo,
+                YearIssued = request.YearIssued,
+                ExpiringDate = request.ExpiringDate,
+                YearsOfExperience = request.YearsOfExperience,
+                NameOfCurrentDrivingSchool = request.NameOfCurrentDrivingSchool,
+                RegistrationTypeId = request.RegistrationTypeId,
                 CreatedBy = request.Email,
-                CreatedOn = DateTime.Now
+                CreatedOn = DateTime.Now,
             };
+
+            foreach (var qualificationDto in request.AcademicQualifications)
+            {
+                var qualification = new AcademicQualification
+                {
+                    Degree = qualificationDto.Degree,
+                    FieldOfStudy = qualificationDto.FieldOfStudy,
+                    Institution = qualificationDto.Institution,
+                    YearAttained = qualificationDto.YearAttained,
+                    CreatedBy = newUser.Email,
+                    CreatedOn = DateTime.Now
+                };
+
+                var userAcademicQualification = new UserAcademicQualifications
+                {
+                    UserId = newUser.Id,
+                    User = newUser,
+                    QualificationId = qualification.Id,
+                    Qualification = qualification
+                };
+                newUser.UserAcademicQualifications.Add(userAcademicQualification);
+            }
             var result = await userManager.CreateAsync(newUser, request.Password);
             if(result.Succeeded)
             {
-                await userManager.AddToRoleAsync(newUser, "Member");
-                var confirmEmailToken = await userManager.GenerateEmailConfirmationTokenAsync(newUser);
-                var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
-                var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
-
-                string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={newUser.Email}&token={validEmailToken}";
-                string userFullName = $"{newUser.FirstName} {newUser.LastName}";
-                var mailRequestDto = new MailRequestDto
-                {
-                    ToEmail = newUser.Email,
-                    Subject = "Confirm Your Email",
-                    Body = emailService.CreateBody(userFullName, "IPDIN DrivingSchool", url)
-                };
-                emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
-                newUser.MembershipNumber = GenerateMembershipNumber();
-                await userManager.UpdateAsync(newUser);
+                await AssignRoleAndSendConfirmationEmailAsync(newUser, "Member");
                 return new ApiResponse<UserResponseDto>
                 {
                     IsSuccessful = true,
@@ -70,7 +89,7 @@ namespace App.Infrastructure.ExternalServices
 
         public async Task<ApiResponse<string>> SignInAsync(SignInRequestDto request)
         {
-            var user = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == request.MembershipNumber);
+            var user = await userManager.Users.FirstOrDefaultAsync(u => u.MembershipNumber == request.MembershipNumber);
             if (user == null) return new ApiResponse<string>
             {
                 IsSuccessful = false,
@@ -83,7 +102,7 @@ namespace App.Infrastructure.ExternalServices
                 Message = "Please confirm your email before signing in"
             };
 
-            var result = await signInManager.PasswordSignInAsync(request.MembershipNumber, request.Password, request.RememberMe, false);
+            var result = await signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, false);
             if (!result.Succeeded) return new ApiResponse<string>
             {
                 IsSuccessful = false,
@@ -209,7 +228,7 @@ namespace App.Infrastructure.ExternalServices
                 new Claim("Surname", user.LastName),
                 new Claim("GivenName", user.FirstName),
                 new Claim("NameIdentifier", user.UserName),
-                new Claim("Email", user.Email)
+                new Claim(ClaimTypes.Email, user.Email)
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
@@ -224,14 +243,14 @@ namespace App.Infrastructure.ExternalServices
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private static string GenerateMembershipNumber()
+        private async Task<string> GenerateMembershipNumberAsync()
         {
-            Random rand = new Random();
-            string letters = new string(Enumerable.Range(0, 3)
-                .Select(_ => (char)rand.Next('A', 'Z' + 1)).ToArray());
+            int userCount = await userManager.Users.CountAsync();
+            userCount++;
 
-            int year = rand.Next(2000, 2026);
-            return $"{letters}/{year}";
+            string year = DateTime.Now.Year.ToString();
+            string uniqueId = userCount.ToString("D4");
+            return $"MEM/{year}/{uniqueId}";
         }
 
         public async Task<ApiResponse<string>> ResendEmailConfirmationToken(string email)
@@ -277,6 +296,25 @@ namespace App.Infrastructure.ExternalServices
             };
         }
 
+        private async Task AssignRoleAndSendConfirmationEmailAsync(User user, string role)
+        {
+            await userManager.AddToRoleAsync(user, role);
+            var confirmEmailToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
+            var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
+            string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
+            string userFullName = $"{user.FirstName} {user.LastName}";
+            var mailRequestDto = new MailRequestDto
+            {
+                ToEmail = user.Email,
+                Subject = "Confirm Your Email",
+                Body = emailService.CreateBody(userFullName, "IPDIN DrivingSchool", url)
+            };
+            emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
+            user.MembershipNumber = await GenerateMembershipNumberAsync();
+            await userManager.UpdateAsync(user);
+            await unitOfWork.SaveAsync();
+        }
     }
 }

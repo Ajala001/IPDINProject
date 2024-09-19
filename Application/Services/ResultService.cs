@@ -158,6 +158,7 @@ namespace App.Application.Services
 
                         var result = new Result
                         {
+                            Id = Guid.NewGuid(),
                             UserId = user.Id,
                             ExaminationId = examination.Id,
                             TotalScore = totalScore,

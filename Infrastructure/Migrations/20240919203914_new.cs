@@ -7,7 +7,7 @@ using MySql.EntityFrameworkCore.Metadata;
 namespace App.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class @new : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -56,63 +56,14 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "AspNetUsers",
+                name: "Examinations",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    LastName = table.Column<string>(type: "longtext", nullable: false),
-                    FirstName = table.Column<string>(type: "longtext", nullable: false),
-                    MembershipNumber = table.Column<string>(type: "longtext", nullable: true),
-                    Gender = table.Column<int>(type: "int", nullable: false),
-                    DateOfBirth = table.Column<DateOnly>(type: "date", nullable: false),
-                    ProfilePic = table.Column<string>(type: "longtext", nullable: true),
-                    Category = table.Column<int>(type: "int", nullable: true),
-                    StreetNo = table.Column<short>(type: "smallint", nullable: true),
-                    StreetName = table.Column<string>(type: "longtext", nullable: true),
-                    City = table.Column<string>(type: "longtext", nullable: true),
-                    StateOfResidence = table.Column<string>(type: "longtext", nullable: true),
-                    LocalGovt = table.Column<string>(type: "longtext", nullable: true),
-                    StateOfOrigin = table.Column<string>(type: "longtext", nullable: true),
-                    Country = table.Column<string>(type: "longtext", nullable: true),
-                    DriverLicenseNo = table.Column<string>(type: "longtext", nullable: true),
-                    YearIssued = table.Column<short>(type: "smallint", nullable: true),
-                    ExpiringDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    YearsOfExperience = table.Column<short>(type: "smallint", nullable: true),
-                    NameOfCurrentDrivingSchool = table.Column<string>(type: "longtext", nullable: true),
-                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
-                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true),
-                    UserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
-                    Email = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
-                    NormalizedEmail = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
-                    EmailConfirmed = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    PasswordHash = table.Column<string>(type: "longtext", nullable: true),
-                    SecurityStamp = table.Column<string>(type: "longtext", nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "longtext", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "longtext", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    TwoFactorEnabled = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    LockoutEnd = table.Column<DateTimeOffset>(type: "datetime", nullable: true),
-                    LockoutEnabled = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    AccessFailedCount = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Courses",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    CourseCode = table.Column<string>(type: "longtext", nullable: false),
-                    CourseTitle = table.Column<string>(type: "longtext", nullable: false),
-                    CourseUnit = table.Column<string>(type: "longtext", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
+                    ExamTitle = table.Column<string>(type: "longtext", nullable: false),
+                    ExamDateAndTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    ExamYear = table.Column<short>(type: "smallint", nullable: false),
+                    Fee = table.Column<int>(type: "int", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedBy = table.Column<string>(type: "longtext", nullable: false),
                     ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
@@ -120,7 +71,25 @@ namespace App.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Courses", x => x.Id);
+                    table.PrimaryKey("PK_Examinations", x => x.Id);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "RegistrationTypes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    Name = table.Column<string>(type: "longtext", nullable: false),
+                    Dues = table.Column<int>(type: "int", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
+                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RegistrationTypes", x => x.Id);
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
 
@@ -173,12 +142,97 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Courses",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    CourseCode = table.Column<string>(type: "longtext", nullable: false),
+                    CourseTitle = table.Column<string>(type: "longtext", nullable: false),
+                    CourseUnit = table.Column<string>(type: "longtext", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
+                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Courses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Courses_Examinations_ExaminationId",
+                        column: x => x.ExaminationId,
+                        principalTable: "Examinations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUsers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    RegistrationTypeId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    LastName = table.Column<string>(type: "longtext", nullable: false),
+                    FirstName = table.Column<string>(type: "longtext", nullable: false),
+                    MembershipNumber = table.Column<string>(type: "longtext", nullable: true),
+                    HasPaidDues = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    Gender = table.Column<int>(type: "int", nullable: false),
+                    DateOfBirth = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    ProfilePic = table.Column<string>(type: "longtext", nullable: true),
+                    StreetNo = table.Column<short>(type: "smallint", nullable: true),
+                    StreetName = table.Column<string>(type: "longtext", nullable: true),
+                    City = table.Column<string>(type: "longtext", nullable: true),
+                    StateOfResidence = table.Column<string>(type: "longtext", nullable: false),
+                    LocalGovt = table.Column<string>(type: "longtext", nullable: true),
+                    StateOfOrigin = table.Column<string>(type: "longtext", nullable: true),
+                    Country = table.Column<string>(type: "longtext", nullable: false),
+                    DriverLicenseNo = table.Column<string>(type: "longtext", nullable: false),
+                    YearIssued = table.Column<short>(type: "smallint", nullable: false),
+                    ExpiringDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    YearsOfExperience = table.Column<short>(type: "smallint", nullable: false),
+                    NameOfCurrentDrivingSchool = table.Column<string>(type: "longtext", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
+                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true),
+                    UserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    PasswordHash = table.Column<string>(type: "longtext", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "longtext", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "longtext", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "longtext", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "datetime", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetUsers_RegistrationTypes_RegistrationTypeId",
+                        column: x => x.RegistrationTypeId,
+                        principalTable: "RegistrationTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Applications",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ApplicationPurpose = table.Column<string>(type: "longtext", nullable: false),
+                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: true),
+                    TrainingId = table.Column<Guid>(type: "char(36)", nullable: true),
+                    ApplicationPurpose = table.Column<string>(type: "longtext", nullable: true),
                     Date = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
@@ -315,111 +369,6 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "UserAcademicQualifications",
-                columns: table => new
-                {
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    QualificationId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserAcademicQualifications", x => new { x.UserId, x.QualificationId });
-                    table.ForeignKey(
-                        name: "FK_UserAcademicQualifications_AcademicQualifications_Qualificat~",
-                        column: x => x.QualificationId,
-                        principalTable: "AcademicQualifications",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserAcademicQualifications_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Examinations",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ExamTitle = table.Column<string>(type: "longtext", nullable: false),
-                    ExamDateAndTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    ExamYear = table.Column<DateOnly>(type: "date", nullable: false),
-                    CourseId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Fee = table.Column<int>(type: "int", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
-                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Examinations", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Examinations_Courses_CourseId",
-                        column: x => x.CourseId,
-                        principalTable: "Courses",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "UserCourses",
-                columns: table => new
-                {
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    CourseId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserCourses", x => new { x.UserId, x.CourseId });
-                    table.ForeignKey(
-                        name: "FK_UserCourses_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserCourses_Courses_CourseId",
-                        column: x => x.CourseId,
-                        principalTable: "Courses",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "UserTrainings",
-                columns: table => new
-                {
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    TrainingId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserTrainings", x => new { x.UserId, x.TrainingId });
-                    table.ForeignKey(
-                        name: "FK_UserTrainings_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserTrainings_Trainings_TrainingId",
-                        column: x => x.TrainingId,
-                        principalTable: "Trainings",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySQL:Charset", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "Results",
                 columns: table => new
                 {
@@ -452,6 +401,58 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "UserAcademicQualifications",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    QualificationId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserAcademicQualifications", x => new { x.UserId, x.QualificationId });
+                    table.ForeignKey(
+                        name: "FK_UserAcademicQualifications_AcademicQualifications_Qualificat~",
+                        column: x => x.QualificationId,
+                        principalTable: "AcademicQualifications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserAcademicQualifications_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "UserCourses",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    CourseId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserCourses", x => new { x.UserId, x.CourseId });
+                    table.ForeignKey(
+                        name: "FK_UserCourses_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserCourses_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "UserExaminations",
                 columns: table => new
                 {
@@ -472,6 +473,32 @@ namespace App.Infrastructure.Migrations
                         name: "FK_UserExaminations_Examinations_ExaminationId",
                         column: x => x.ExaminationId,
                         principalTable: "Examinations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "UserTrainings",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    TrainingId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserTrainings", x => new { x.UserId, x.TrainingId });
+                    table.ForeignKey(
+                        name: "FK_UserTrainings_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserTrainings_Trainings_TrainingId",
+                        column: x => x.TrainingId,
+                        principalTable: "Trainings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -514,15 +541,20 @@ namespace App.Infrastructure.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AspNetUsers_RegistrationTypeId",
+                table: "AspNetUsers",
+                column: "RegistrationTypeId");
+
+            migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Examinations_CourseId",
-                table: "Examinations",
-                column: "CourseId");
+                name: "IX_Courses_ExaminationId",
+                table: "Courses",
+                column: "ExaminationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payments_UserId",
@@ -532,7 +564,8 @@ namespace App.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Results_ExaminationId",
                 table: "Results",
-                column: "ExaminationId");
+                column: "ExaminationId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Results_UserId",
@@ -606,7 +639,7 @@ namespace App.Infrastructure.Migrations
                 name: "AcademicQualifications");
 
             migrationBuilder.DropTable(
-                name: "Examinations");
+                name: "Courses");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
@@ -615,7 +648,10 @@ namespace App.Infrastructure.Migrations
                 name: "Trainings");
 
             migrationBuilder.DropTable(
-                name: "Courses");
+                name: "Examinations");
+
+            migrationBuilder.DropTable(
+                name: "RegistrationTypes");
         }
     }
 }

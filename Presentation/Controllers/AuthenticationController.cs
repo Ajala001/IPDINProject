@@ -36,7 +36,7 @@ namespace App.Presentation.Controllers
 
 
         [HttpGet("confirmEmail")] 
-        public async Task<IActionResult> ConfirmEmail(string email, string token)
+        public async Task<IActionResult> ConfirmEmail([FromQuery]string email, [FromQuery]string token)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token)) return BadRequest();
             var result = await sender.Send(new ConfirmEmailCommand(email, token));

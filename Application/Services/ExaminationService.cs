@@ -17,18 +17,10 @@ namespace App.Application.Services
         public async Task<ApiResponse<ExaminationResponseDto>> CreateAsync(CreateExaminationRequestDto request)
         {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var course = await courseRepository.GetCourseAsync(c => c.Id == request.CourseId);
-            if (course == null) return new ApiResponse<ExaminationResponseDto>
-            {
-                IsSuccessful = false,
-                Message = "Course Not Found",
-                Data = null
-            };
-
             var examination = await examinationRepository.GetExaminationAsync(e =>
                             e.ExamTitle == request.ExamTitle &&
                             e.ExamYear == request.ExamYear &&
-                            e.CourseId == request.CourseId
+                            e.Courses == request.Courses
                     );
             if(examination != null) return new ApiResponse<ExaminationResponseDto>
             {
@@ -37,34 +29,48 @@ namespace App.Application.Services
                 Data = null
             };
 
+
+            var courses = await courseRepository.GetSelectedAsync(c => request.Courses.Contains(c.Id));
+            if (courses.Count != request.Courses.Count)
+            {
+                return new ApiResponse<ExaminationResponseDto>
+                {
+                    IsSuccessful = false,
+                    Message = "One or more courses are invalid."
+                };
+            }
             var newExamination = new Examination
             {
                 Id = Guid.NewGuid(),
                 ExamTitle = request.ExamTitle,
                 ExamDateAndTime = request.ExamDateAndTime,
                 Fee = request.Fee,
-                CourseId = request.CourseId,
-                Course = course,
+                Courses = courses,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
             };
-
             await examinationRepository.CreateAsync(newExamination);
             await unitOfWork.SaveAsync();
 
             return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Examination Added Succesfully",
+                Message = "Examination Added Successfully",
                 Data = new ExaminationResponseDto
                 {
                     Id = newExamination.Id,
                     ExamTitle = newExamination.ExamTitle,
                     ExamDate = newExamination.ExamDateAndTime.ToString("D"),
                     ExamTime = newExamination.ExamDateAndTime.ToString("t"),
-                    CourseTitle = newExamination.Course.CourseTitle,
-                    CourseCode = newExamination.Course.CourseCode,
-                    Fee = newExamination.Fee
+                    ExamYear = newExamination.ExamYear,
+                    Fee = newExamination.Fee,
+                    Courses = newExamination.Courses.Select(c => new CourseResponseDto
+                    {
+                        Id = c.Id,
+                        CourseTitle = c.CourseTitle,
+                        CourseCode = c.CourseCode,
+                        CourseUnit = c.CourseUnit
+                    }).ToList()
                 }
             };
         }
@@ -103,16 +109,22 @@ namespace App.Application.Services
             return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Examination Retrieved Succesfully",
+                Message = "Examination Retrieved Successfully",
                 Data = new ExaminationResponseDto
                 {
                     Id = examination.Id,
                     ExamTitle = examination.ExamTitle,
                     ExamDate = examination.ExamDateAndTime.ToString("D"),
                     ExamTime = examination.ExamDateAndTime.ToString("t"),
-                    CourseTitle = examination.Course.CourseTitle,
-                    CourseCode = examination.Course.CourseCode,
-                    Fee = examination.Fee
+                    ExamYear = examination.ExamYear,
+                    Fee = examination.Fee,
+                    Courses = examination.Courses.Select(c => new CourseResponseDto
+                    {
+                        Id = c.Id,
+                        CourseTitle = c.CourseTitle,
+                        CourseCode = c.CourseCode,
+                        CourseUnit = c.CourseUnit
+                    }).ToList()
                 }
             };
         }
@@ -133,9 +145,15 @@ namespace App.Application.Services
                 ExamTitle = examination.ExamTitle,
                 ExamDate = examination.ExamDateAndTime.ToString("D"),
                 ExamTime = examination.ExamDateAndTime.ToString("t"),
-                CourseTitle = examination.Course.CourseTitle,
-                CourseCode = examination.Course.CourseCode,
-                Fee = examination.Fee
+                ExamYear = examination.ExamYear,
+                Fee = examination.Fee,
+                Courses = examination.Courses.Select(c => new CourseResponseDto
+                {
+                    Id = c.Id,
+                    CourseTitle = c.CourseTitle,
+                    CourseCode = c.CourseCode,
+                    CourseUnit = c.CourseUnit
+                }).ToList()
             }).ToList();
 
             return new ApiResponse<IEnumerable<ExaminationResponseDto>>
@@ -148,37 +166,40 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request)
         {
+            // Fetch examinations with included courses
             var examinations = await examinationRepository.GetExaminationsAsync();
-            var searchedExaminations = examinations.Where(exam =>
-            (!string.IsNullOrEmpty(request.CourseTitle) && exam.Course.CourseTitle.Contains(request.CourseTitle, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrEmpty(request.CourseCode) && exam.Course.CourseCode.Contains(request.CourseCode, StringComparison.OrdinalIgnoreCase))
-            || (request.ExamYear != default && exam.ExamYear == request.ExamYear)
-             );
 
-            if (!searchedExaminations.Any()) return new ApiResponse<IEnumerable<ExaminationResponseDto>>
+            // Filter examinations based on the search criteria
+            var filteredExaminations = examinations
+                .Where(exam =>
+                    (string.IsNullOrEmpty(request.CourseTitle) || exam.Courses.Any(c => c.CourseTitle.Contains(request.CourseTitle, StringComparison.OrdinalIgnoreCase)))
+                    && (string.IsNullOrEmpty(request.CourseCode) || exam.Courses.Any(c => c.CourseCode.Contains(request.CourseCode, StringComparison.OrdinalIgnoreCase)))
+                    && (request.ExamYear == default || exam.ExamYear == request.ExamYear)
+                );
+
+            // Check if there are results
+            if (!filteredExaminations.Any())
             {
-                IsSuccessful = false,
-                Message = "No Match Found",
-                Data = null
-            };
+                return new ApiResponse<IEnumerable<ExaminationResponseDto>>
+                {
+                    IsSuccessful = false,
+                    Message = "No Match Found",
+                    Data = null
+                };
+            }
 
-            int pageNumber = 1;
-            int pageSize = 10;
-            var paginatedExams = searchedExaminations
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+            // Pagination parameters
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1; // Default to page 1 if invalid
+            int pageSize = request.PageSize > 0 ? request.PageSize : 10; // Default to page size 10 if invalid
 
-            var responseData = paginatedExams.Select(examination => new ExaminationResponseDto
-            {
-                Id = examination.Id,
-                ExamTitle = examination.ExamTitle,
-                ExamDate = examination.ExamDateAndTime.ToString("D"),
-                ExamTime = examination.ExamDateAndTime.ToString("t"),
-                CourseTitle = examination.Course.CourseTitle,
-                CourseCode = examination.Course.CourseCode,
-                Fee = examination.Fee
-            }).ToList();
+            // Paginate the results
+            var paginatedExams = filteredExaminations
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            // Map to DTOs
+            var responseData = paginatedExams.Select(MapToExaminationResponseDto).ToList();
 
             return new ApiResponse<IEnumerable<ExaminationResponseDto>>
             {
@@ -187,6 +208,28 @@ namespace App.Application.Services
                 Data = responseData
             };
         }
+
+        // Helper method to map Examination to ExaminationResponseDto
+        private ExaminationResponseDto MapToExaminationResponseDto(Examination examination)
+        {
+            return new ExaminationResponseDto
+            {
+                Id = examination.Id,
+                ExamTitle = examination.ExamTitle,
+                ExamDate = examination.ExamDateAndTime.ToString("D"),
+                ExamTime = examination.ExamDateAndTime.ToString("t"),
+                ExamYear = examination.ExamYear,
+                Fee = examination.Fee,
+                Courses = examination.Courses.Select(c => new CourseResponseDto
+                {
+                    Id = c.Id,
+                    CourseTitle = c.CourseTitle,
+                    CourseCode = c.CourseCode,
+                    CourseUnit = c.CourseUnit
+                }).ToList()
+            };
+        }
+
 
         public async Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request)
         {
@@ -199,7 +242,6 @@ namespace App.Application.Services
                 Data = null
             };
 
-            examination.CourseId = request.CourseId ?? examination.CourseId;
             examination.ExamTitle = request.ExamTitle ?? examination.ExamTitle;
             examination.ExamYear = request.ExamYear ?? examination.ExamYear;
             examination.Fee = request.Fee ?? examination.Fee;
@@ -213,16 +255,22 @@ namespace App.Application.Services
             return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Examination Updated Succesfully",
+                Message = "Examination Updated Successfully",
                 Data = new ExaminationResponseDto
                 {
                     Id = examination.Id,
                     ExamTitle = examination.ExamTitle,
                     ExamDate = examination.ExamDateAndTime.ToString("D"),
                     ExamTime = examination.ExamDateAndTime.ToString("t"),
-                    CourseTitle = examination.Course.CourseTitle,
-                    CourseCode = examination.Course.CourseCode,
-                    Fee = examination.Fee
+                    ExamYear = examination.ExamYear,
+                    Fee = examination.Fee,
+                    Courses = examination.Courses.Select(c => new CourseResponseDto
+                    {
+                        Id = c.Id,
+                        CourseTitle = c.CourseTitle,
+                        CourseCode = c.CourseCode,
+                        CourseUnit = c.CourseUnit
+                    }).ToList()
                 }
             };
         }

@@ -1,9 +1,14 @@
 ﻿using App.Application;
+using App.Application.AuthPolicy;
 using App.Core;
+using App.Core.Entities;
 using App.Core.Interfaces;
 using App.Infrastructure;
+using App.Infrastructure.Data;
 using App.Infrastructure.ExternalServices;
+using App.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -14,6 +19,33 @@ namespace App.Presentation
     {
         public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("PaidDuesOnly", policy =>
+                    policy.Requirements.Add(new PaymentRequirement()));
+            });
+
+
+            services.AddIdentity<User, Role>(options =>
+            {
+                // Identity options configuration
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequiredUniqueChars = 1;
+                options.SignIn.RequireConfirmedEmail = true;
+
+                // Lockout settings
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
+            })
+            .AddEntityFrameworkStores<IPDINDbContext>()
+            .AddDefaultTokenProviders();
+
+
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigin",

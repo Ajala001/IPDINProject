@@ -28,6 +28,7 @@ namespace App.Application.Services
 
             var newCourse = new Course
             {
+                Id = Guid.NewGuid(),
                 CourseTitle = request.CourseTitle,
                 CourseCode = request.CourseCode,
                 CourseUnit = request.CourseUnit,
@@ -41,7 +42,7 @@ namespace App.Application.Services
             return new ApiResponse<CourseResponseDto>
             {
                 IsSuccessful = true,
-                Message = "New Course Addded Successfully",
+                Message = "New Course Added Successfully",
                 Data = new CourseResponseDto
                 {
                     Id = newCourse.Id,

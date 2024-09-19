@@ -1,5 +1,7 @@
-﻿using App.Application.Services;
+﻿using App.Application.AuthPolicy;
+using App.Application.Services;
 using App.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace App.Application
@@ -19,8 +21,14 @@ namespace App.Application
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITrainingService, TrainingService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IRegistrationTypeService, RegistrationTypeService>();
 
             services.AddHostedService<TrainingStatusUpdaterService>();
+
+           
+
+            services.AddTransient<IAuthorizationHandler, PaymentHandler>();
+
 
             return services;
         }

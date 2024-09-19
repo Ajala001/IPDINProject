@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Authorize(Roles = "Admin, Member")]
     [Route("api/qualification")]
     [ApiController]
     public class QualificationsController(ISender sender) : ControllerBase
@@ -21,7 +20,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-        
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet]
         public async Task<IActionResult> GetAllAcademicQualificationAsync()
         {

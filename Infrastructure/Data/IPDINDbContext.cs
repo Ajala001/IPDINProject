@@ -2,6 +2,7 @@
 using App.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 namespace App.Infrastructure.Data
 {
     public class IPDINDbContext : IdentityDbContext<User, Role, Guid>
@@ -16,6 +17,7 @@ namespace App.Infrastructure.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Result> Results { get; set; }
         public DbSet<Training> Trainings { get; set; }
+        public DbSet<RegistrationType> RegistrationTypes { get; set; }
         public DbSet<AcademicQualification> AcademicQualifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -37,16 +39,17 @@ namespace App.Infrastructure.Data
             builder.Entity<Examination>().HasKey(e => e.Id);
             builder.Entity<AcademicQualification>().HasKey(aq => aq.Id);
 
+            // Configure 1-to-1 relationships
+            builder.Entity<Examination>()
+               .HasOne(e => e.Result)        
+               .WithOne(r => r.Examination)       
+               .HasForeignKey<Result>(r => r.ExaminationId);  
+
             // Configure 1-to-Many relationships
             builder.Entity<Course>()
-                .HasMany(c => c.Examinations)
-                .WithOne(e => e.Course)
-                .HasForeignKey(e => e.CourseId);
-
-            builder.Entity<Examination>()
-                .HasMany(e => e.Results)
-                .WithOne(r => r.Examination)
-                .HasForeignKey(r => r.ExaminationId);
+               .HasOne(c => c.Examination)      
+               .WithMany(e => e.Courses)      
+               .HasForeignKey(c => c.ExaminationId);
 
             builder.Entity<User>()
                 .HasMany(u => u.Payments)
@@ -62,6 +65,12 @@ namespace App.Infrastructure.Data
                 .HasMany(u => u.Applications)
                 .WithOne(p => p.User)
                 .HasForeignKey(p => p.UserId);
+
+            builder.Entity<User>()
+            .HasOne(u => u.RegistrationType)  // Each User has one RegistrationType
+            .WithMany(rt => rt.Users)         // Each RegistrationType has many Users
+            .HasForeignKey(u => u.RegistrationTypeId)  // Foreign key in User table
+            .OnDelete(DeleteBehavior.Restrict);
 
 
             // Configure Many-to-Many relationships

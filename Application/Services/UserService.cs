@@ -104,7 +104,6 @@ namespace App.Application.Services
             user.PhoneNumber = request.PhoneNumber ?? user.PhoneNumber;
             user.Email = request.Email ?? user.Email;
             user.DateOfBirth = request.DateOfBirth ?? user.DateOfBirth;
-            user.Category = request.Category ?? user.Category;
             user.StreetNo = request.StreetNo ?? user.StreetNo;
             user.StreetName = request.StreetName ?? user.StreetName;
             user.City = request.City ?? user.City;
@@ -117,6 +116,7 @@ namespace App.Application.Services
             user.ExpiringDate = request.ExpiringDate ?? user.ExpiringDate;
             user.YearsOfExperience = request.YearsOfExperience ?? user.YearsOfExperience;
             user.NameOfCurrentDrivingSchool = request.NameOfCurrentDrivingSchool ?? user.NameOfCurrentDrivingSchool;
+
             user.ModifiedBy = loginUser;
             user.ModifiedOn = DateTime.Now;
 
@@ -145,7 +145,6 @@ namespace App.Application.Services
                 Gender = user.Gender,
                 DateOfBirth = user.DateOfBirth,
                 ProfilePic = user.ProfilePic ?? string.Empty,
-                Category = user.Category,
                 Address = $"{user.StreetNo?.ToString() ?? string.Empty}, {user.StreetName} {user.City} {user.StateOfResidence}, {user.Country}",
                 LocalGovt = user.LocalGovt ?? string.Empty,
                 StateOfOrigin = user.StateOfOrigin ?? string.Empty,

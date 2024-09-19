@@ -5,17 +5,18 @@ using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace App.Application.Services
 {
-    public class AcademicQualificationService(IHttpContextAccessor httpContextAccessor,
+    public class AcademicQualificationService(IHttpContextAccessor httpContextAccessor, UserManager<User> userManager,
         IAcademicQualificationRepository qualificationRepository, IUnitOfWork unitOfWork)
         : IAcademicQualificationService
     {
         public async Task<ApiResponse<AcademicQualificationResponseDto>> CreateAsync(CreateAcademicQualificationRequestDto request)
         {
-            //var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var academicQualification = new AcademicQualification
             {
                 Id = Guid.NewGuid(),
@@ -23,25 +24,11 @@ namespace App.Application.Services
                 Institution = request.Institution,
                 FieldOfStudy = request.FieldOfStudy,
                 YearAttained = request.YearAttained,
-                CreatedBy = "loginUser",
+                CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
             };
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                FirstName = "Abdbaasit",
-                LastName = "Ajala",
-                UserName = "admin@example.com",
-                Email = "admin@example.com",
-                EmailConfirmed = true,
-                Gender = Core.Enums.Gender.Male,
-                DateOfBirth = DateTime.Now,
-                CreatedOn = DateTime.Now,
-                CreatedBy = "Admin"
-            };
-
-            //var user = await userManager.FindByEmailAsync(loginUser!);
+            var user = await userManager.FindByEmailAsync(loginUser!);
             var userAcademicQualification = new UserAcademicQualifications
             {
                 QualificationId = academicQualification.Id,

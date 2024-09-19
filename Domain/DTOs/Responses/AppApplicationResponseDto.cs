@@ -6,7 +6,7 @@ namespace App.Core.DTOs.Responses
     {
         public Guid Id { get; set; }
         public string ApplicantFullName { get; set; } = null!;
-        public string ApplicationPurpose { get; set; } = null!; // reason for making the application
+        public string? ApplicationPurpose { get; set; } // reason for making the application
         public DateTime Date { get; set; }
         public ApplicationStatus Status { get; set; }
     }

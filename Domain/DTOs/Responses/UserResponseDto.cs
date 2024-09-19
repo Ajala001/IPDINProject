@@ -1,5 +1,4 @@
-﻿using App.Core.Entities;
-using App.Core.Enums;
+﻿using App.Core.Enums;
 
 namespace App.Core.DTOs.Responses
 {
@@ -12,7 +11,6 @@ namespace App.Core.DTOs.Responses
         public required Gender Gender { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public string? ProfilePic { get; set; }
-        public UserCategory? Category { get; set; }
         public string Address { get; set; } = null!;
         public string LocalGovt { get; set; } = null!;
         public string StateOfOrigin { get; set; } = null!;

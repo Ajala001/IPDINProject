@@ -21,7 +21,7 @@ namespace App.Infrastructure.Repositories
 
         public async Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate)
         {
-            var result = await dbContext.Examinations.Include(a => a.Course)
+            var result = await dbContext.Examinations.Include(a => a.Courses)
                                                 .Include(a => a.Examinations)
                                                 .FirstOrDefaultAsync(predicate);
             return result;
@@ -29,22 +29,33 @@ namespace App.Infrastructure.Repositories
 
         public async Task<IEnumerable<Examination>> GetExaminationsAsync()
         {
-            return await dbContext.Examinations.Include(a => a.Course)
-                                                .Include(a => a.Examinations)
-                                                .ToListAsync();
+            return await dbContext.Examinations.Include(a => a.Courses).ToListAsync();
         }
 
         public async Task<IEnumerable<Examination>> SearchExaminationAsync(string courseTitle, string courseCode)
         {
-            return await dbContext.Examinations.Where(e => e
-                    .Course.CourseTitle.Contains(courseTitle, StringComparison.OrdinalIgnoreCase) || e.Course.CourseCode.Contains(courseCode))
-                    .ToListAsync();
+            return await dbContext.Examinations
+                .Include(e => e.Courses) 
+                .Where(e => e.Courses.Any(c =>
+                    (!string.IsNullOrEmpty(courseTitle) && c.CourseTitle.Contains(courseTitle, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(courseCode) && c.CourseCode.Contains(courseCode, StringComparison.OrdinalIgnoreCase))
+                ))
+                .ToListAsync();
         }
+
 
         public Examination Update(Examination examination)
         {
             dbContext.Examinations.Update(examination);
             return examination; 
+        }
+
+        public async Task<ICollection<Examination>> GetSelectedAsync(Expression<Func<Examination, bool>> predicate)
+        {
+            var response = await dbContext.Examinations
+                            .Include(e => e.Courses)
+                            .Where(predicate).ToListAsync();
+            return response;
         }
     }
 }
