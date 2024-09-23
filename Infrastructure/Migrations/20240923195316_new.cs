@@ -56,6 +56,26 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Courses",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    CourseCode = table.Column<string>(type: "longtext", nullable: false),
+                    CourseTitle = table.Column<string>(type: "longtext", nullable: false),
+                    CourseUnit = table.Column<string>(type: "longtext", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
+                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Courses", x => x.Id);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Examinations",
                 columns: table => new
                 {
@@ -142,26 +162,24 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Courses",
+                name: "ExamCourses",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    CourseCode = table.Column<string>(type: "longtext", nullable: false),
-                    CourseTitle = table.Column<string>(type: "longtext", nullable: false),
-                    CourseUnit = table.Column<string>(type: "longtext", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
-                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
+                    CoursesId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    ExaminationsId = table.Column<Guid>(type: "char(36)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Courses", x => x.Id);
+                    table.PrimaryKey("PK_ExamCourses", x => new { x.CoursesId, x.ExaminationsId });
                     table.ForeignKey(
-                        name: "FK_Courses_Examinations_ExaminationId",
-                        column: x => x.ExaminationId,
+                        name: "FK_ExamCourses_Courses_CoursesId",
+                        column: x => x.CoursesId,
+                        principalTable: "Courses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ExamCourses_Examinations_ExaminationsId",
+                        column: x => x.ExaminationsId,
                         principalTable: "Examinations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -552,9 +570,9 @@ namespace App.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Courses_ExaminationId",
-                table: "Courses",
-                column: "ExaminationId");
+                name: "IX_ExamCourses_ExaminationsId",
+                table: "ExamCourses",
+                column: "ExaminationsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payments_UserId",
@@ -615,6 +633,9 @@ namespace App.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "ExamCourses");
+
+            migrationBuilder.DropTable(
                 name: "Payments");
 
             migrationBuilder.DropTable(
@@ -642,13 +663,13 @@ namespace App.Infrastructure.Migrations
                 name: "Courses");
 
             migrationBuilder.DropTable(
+                name: "Examinations");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Trainings");
-
-            migrationBuilder.DropTable(
-                name: "Examinations");
 
             migrationBuilder.DropTable(
                 name: "RegistrationTypes");

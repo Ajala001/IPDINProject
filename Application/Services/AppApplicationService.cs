@@ -1,9 +1,12 @@
-﻿using App.Core.DTOs.Requests.CreateRequestDtos;
+﻿using App.Application.HtmlFormat;
+using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
@@ -12,7 +15,7 @@ namespace App.Application.Services
 {
     public class AppApplicationService(IHttpContextAccessor httpContextAccessor, UserManager<User> userManager,
         IAppApplicationRepository applicationRepository, IUnitOfWork unitOfWork, ITrainingRepository trainingRepository,
-        IExaminationRepository examinationRepository) 
+        IExaminationRepository examinationRepository, IConverter converter, IApplicationSlip applicationSlip) 
         : IAppApplicationService
     {
         public async Task<ApiResponse<AppApplicationResponseDto>> CreateAsync(CreateAppApplicationRequestDto request)
@@ -167,5 +170,35 @@ namespace App.Application.Services
             };
         }
 
+        public async Task<ApiResponse<byte[]>> GenerateApplicationSlipAsync(Guid applicationId)
+        {
+            var application = await applicationRepository.GetApplicationAsync(a => a.Id == applicationId);
+            var htmlContent = await applicationSlip.HtmlContent(application);
+
+            var document = new HtmlToPdfDocument
+            {
+                GlobalSettings = {
+                ColorMode = ColorMode.Color,
+                Orientation = Orientation.Portrait,
+                PaperSize = PaperKind.A4
+            },
+                Objects = {
+                new ObjectSettings
+                {
+                    PagesCount = true,
+                    HtmlContent = htmlContent,
+                    WebSettings = { DefaultEncoding = "utf-8" },
+                    FooterSettings = { FontName = "Arial", FontSize = 9, Right = "Page [page] of [toPage]", Line = true }
+                }
+            }
+            };
+
+            return new ApiResponse<byte[]>
+            {
+                IsSuccessful = true,
+                Message = "Successfully Generated",
+                Data = converter.Convert(document)
+            }; 
+        }
     }
 }

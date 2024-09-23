@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace App.Presentation.Controllers
 {
     [Authorize(Policy = "PaidDuesOnly", Roles = "Admin, Member")]
-    [Route("api/application")]
+    [Route("api/applications")]
     [ApiController]
     public class ApplicationController(ISender sender) : ControllerBase
     {
@@ -53,6 +53,14 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> DeleteApplicationAsync([FromRoute] Guid applicationId)
         {
             var result = await sender.Send(new DeleteAppApplicationCommand(applicationId));
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
+            return Ok(result);
+        }
+
+        [HttpGet("download-applicationSlip/{applicationId}")]
+        public async Task<IActionResult> GenerateApplicationSlip([FromRoute] Guid applicationId)
+        {
+            var result = await sender.Send(new DownloadApplicationSlipQuery(applicationId));
             if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace App.Presentation.Controllers
 {
     [Authorize(Roles = "Admin, Member")]
-    [Route("api/payment")]
+    [Route("api/payments")]
     [ApiController]
     public class PaymentController(ISender sender) : ControllerBase
     {

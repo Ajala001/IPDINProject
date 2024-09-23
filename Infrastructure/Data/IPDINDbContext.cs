@@ -46,11 +46,6 @@ namespace App.Infrastructure.Data
                .HasForeignKey<Result>(r => r.ExaminationId);  
 
             // Configure 1-to-Many relationships
-            builder.Entity<Course>()
-               .HasOne(c => c.Examination)      
-               .WithMany(e => e.Courses)      
-               .HasForeignKey(c => c.ExaminationId);
-
             builder.Entity<User>()
                 .HasMany(u => u.Payments)
                 .WithOne(p => p.User)
@@ -74,6 +69,12 @@ namespace App.Infrastructure.Data
 
 
             // Configure Many-to-Many relationships
+            //Corse  and Examination
+            builder.Entity<Examination>()
+                .HasMany(e => e.Courses)
+                .WithMany(c => c.Examinations)
+                .UsingEntity(j => j.ToTable("ExamCourses")); // This defines the join table
+
             // User and Course
             builder.Entity<UserCourses>()
                 .HasKey(uc => new { uc.UserId, uc.CourseId });

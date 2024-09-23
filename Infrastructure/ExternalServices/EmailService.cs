@@ -42,7 +42,7 @@ namespace App.Infrastructure.ExternalServices
             }
         }
 
-        public string CreateBody(string userName, string appName, string confimationLink)
+        public string CreateBody(string userName, string appName, string confimationLink, string membershipNo)
         {
             var filePath = Path.Combine(_appEnvironment.WebRootPath, "html", "ConfirmationEmailTemplate.html");
             if (!File.Exists(filePath))
@@ -58,6 +58,7 @@ namespace App.Infrastructure.ExternalServices
             }
 
             body = body.Replace("{{UserName}}", userName);
+            body = body.Replace("{{MembershipNo}}", membershipNo);
             body = body.Replace("{{AppName}}", appName);
             body = body.Replace("{{ConfirmationLink}}", confimationLink);
 

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace App.Presentation.Controllers
 {
     [Authorize(Roles = "Admin")]
-    [Route("api/role")]
+    [Route("api/roles")]
     [ApiController]
     public class RoleController(ISender sender) : ControllerBase
     {

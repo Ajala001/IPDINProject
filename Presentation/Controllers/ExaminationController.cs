@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Route("api/examination")]
+    [Route("api/examinations")]
     [ApiController]
     public class ExaminationController(ISender sender) : ControllerBase
     {

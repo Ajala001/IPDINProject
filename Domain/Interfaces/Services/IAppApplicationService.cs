@@ -1,6 +1,7 @@
 ﻿using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
+using App.Core.Entities;
 
 namespace App.Core.Interfaces.Services
 {
@@ -11,5 +12,6 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<AppApplicationResponseDto>> DeleteAsync(Guid id);
         Task<ApiResponse<IEnumerable<AppApplicationResponseDto>>> GetAppApplicationsAsync();
         Task<ApiResponse<AppApplicationResponseDto>> GetAppApplicationAsync(Guid id);
+        Task<ApiResponse<byte[]>> GenerateApplicationSlipAsync(Guid applicationId);
     }
 }

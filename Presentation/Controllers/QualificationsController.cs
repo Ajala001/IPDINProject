@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Route("api/qualification")]
+    [Route("api/qualifications")]
     [ApiController]
     public class QualificationsController(ISender sender) : ControllerBase
     {

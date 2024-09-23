@@ -1,6 +1,9 @@
 ﻿using App.Application.AuthPolicy;
+using App.Application.HtmlFormat;
 using App.Application.Services;
 using App.Core.Interfaces.Services;
+using DinkToPdf.Contracts;
+using DinkToPdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,7 +25,9 @@ namespace App.Application
             services.AddScoped<ITrainingService, TrainingService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRegistrationTypeService, RegistrationTypeService>();
+            services.AddScoped<IApplicationSlip, ApplicationSlip>();
 
+            services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
             services.AddHostedService<TrainingStatusUpdaterService>();
 
            

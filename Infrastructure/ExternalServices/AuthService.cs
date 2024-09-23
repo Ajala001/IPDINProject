@@ -305,16 +305,17 @@ namespace App.Infrastructure.ExternalServices
 
             string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
             string userFullName = $"{user.FirstName} {user.LastName}";
+
+            user.MembershipNumber = await GenerateMembershipNumberAsync();
+            await userManager.UpdateAsync(user);
+            await unitOfWork.SaveAsync();
             var mailRequestDto = new MailRequestDto
             {
                 ToEmail = user.Email,
                 Subject = "Confirm Your Email",
-                Body = emailService.CreateBody(userFullName, "IPDIN DrivingSchool", url)
+                Body = emailService.CreateBody(userFullName, "IPDIN DrivingSchool", url, user.MembershipNumber)
             };
             emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
-            user.MembershipNumber = await GenerateMembershipNumberAsync();
-            await userManager.UpdateAsync(user);
-            await unitOfWork.SaveAsync();
         }
     }
 }

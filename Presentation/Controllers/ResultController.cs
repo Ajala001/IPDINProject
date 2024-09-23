@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Route("api/result")]
+    [Route("api/results")]
     [ApiController]
     public class ResultController(ISender sender) : ControllerBase
     {

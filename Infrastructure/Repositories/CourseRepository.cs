@@ -21,12 +21,17 @@ namespace App.Infrastructure.Repositories
 
         public async Task<Course> GetCourseAsync(Expression<Func<Course, bool>> predicate)
         {
-            return await dbContext.Courses.FirstOrDefaultAsync(predicate);
+            var result = await dbContext.Courses
+                        .Include(c => c.Examinations).
+                        FirstOrDefaultAsync(predicate);
+            return result;
         }
 
         public async Task<IEnumerable<Course>> GetCoursesAsync()
         {
-            return await dbContext.Courses.ToListAsync();
+            return await dbContext.Courses
+                         .Include(c => c.Examinations)
+                         .ToListAsync();
         }
 
         public async Task<IEnumerable<Course>> SearchCourseAsync(string courseTitle, string courseCode)
@@ -45,7 +50,9 @@ namespace App.Infrastructure.Repositories
         public async Task<ICollection<Course>> GetSelectedAsync(Expression<Func<Course, bool>> predicate)
         {
             var response = await dbContext.Courses
-                            .Where(predicate).ToListAsync();
+                            .Where(predicate)
+                            .Include(c => c.Examinations)
+                            .ToListAsync();
             return response;
         }
     }

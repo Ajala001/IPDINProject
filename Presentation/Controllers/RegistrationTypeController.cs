@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Route("api/registrationType")]
+    [Route("api/registrationTypes")]
     [ApiController]
     public class RegistrationTypeController(ISender sender) : ControllerBase
     {

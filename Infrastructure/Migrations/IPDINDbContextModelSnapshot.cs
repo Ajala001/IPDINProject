@@ -127,9 +127,6 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("ExaminationId")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
 
@@ -140,8 +137,6 @@ namespace App.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ExaminationId");
 
                     b.ToTable("Courses");
                 });
@@ -615,6 +610,21 @@ namespace App.Infrastructure.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
+            modelBuilder.Entity("CourseExamination", b =>
+                {
+                    b.Property<Guid>("CoursesId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("ExaminationsId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("CoursesId", "ExaminationsId");
+
+                    b.HasIndex("ExaminationsId");
+
+                    b.ToTable("ExamCourses", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
@@ -723,17 +733,6 @@ namespace App.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("App.Core.Entities.Course", b =>
-                {
-                    b.HasOne("App.Core.Entities.Examination", "Examination")
-                        .WithMany("Courses")
-                        .HasForeignKey("ExaminationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Examination");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Payment", b =>
@@ -853,6 +852,21 @@ namespace App.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CourseExamination", b =>
+                {
+                    b.HasOne("App.Core.Entities.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CoursesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("App.Core.Entities.Examination", null)
+                        .WithMany()
+                        .HasForeignKey("ExaminationsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("App.Infrastructure.Identity.Role", null)
@@ -916,8 +930,6 @@ namespace App.Infrastructure.Migrations
 
             modelBuilder.Entity("App.Core.Entities.Examination", b =>
                 {
-                    b.Navigation("Courses");
-
                     b.Navigation("Examinations");
 
                     b.Navigation("Result");

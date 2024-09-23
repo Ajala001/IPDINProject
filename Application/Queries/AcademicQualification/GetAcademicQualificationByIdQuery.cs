@@ -1,14 +1,6 @@
-﻿using App.Application.Predicates;
-using App.Core.DTOs.Responses;
-using App.Core.Entities;
-using App.Core.Interfaces.Repositories;
+﻿using App.Core.DTOs.Responses;
 using App.Core.Interfaces.Services;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace App.Application.Queries.AcademicQualification
 {
