@@ -17,12 +17,11 @@ namespace App.Application.Services
         public async Task<ApiResponse<ExaminationResponseDto>> CreateAsync(CreateExaminationRequestDto request)
         {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var examination = await examinationRepository.GetExaminationAsync(e =>
-                            e.ExamTitle == request.ExamTitle &&
-                            e.ExamYear == request.ExamYear &&
-                            e.Courses == request.Courses
-                    );
-            if(examination != null) return new ApiResponse<ExaminationResponseDto>
+            var existingExamination = await examinationRepository.GetExaminationAsync(e =>
+                                     e.ExamTitle == request.ExamTitle &&
+                                     e.ExamYear == request.ExamYear);
+
+            if(existingExamination != null) return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Examination Already Exist",

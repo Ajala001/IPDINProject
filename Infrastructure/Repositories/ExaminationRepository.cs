@@ -22,7 +22,6 @@ namespace App.Infrastructure.Repositories
         public async Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate)
         {
             var result = await dbContext.Examinations.Include(a => a.Courses)
-                                                .Include(a => a.Examinations)
                                                 .FirstOrDefaultAsync(predicate);
             return result;
         }
