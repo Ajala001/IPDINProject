@@ -5,6 +5,7 @@ using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
@@ -32,7 +33,7 @@ namespace App.Application.Services
                 CourseTitle = request.CourseTitle,
                 CourseCode = request.CourseCode,
                 CourseUnit = request.CourseUnit,
-                Status = Core.Enums.CourseStatus.Active,
+                Status = request.Status,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow,
             };
@@ -100,17 +101,49 @@ namespace App.Application.Services
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<CourseResponseDto>>> GetCoursesAsync()
-        {
+        public async Task<PagedResponse<IEnumerable<CourseResponseDto>>> GetCoursesAsync(int pageSize, int pageNumber)
+       {
             var courses = await courseRepository.GetCoursesAsync();
-            if (!courses.Any()) return new ApiResponse<IEnumerable<CourseResponseDto>>
-            {
-                IsSuccessful = false,
-                Message = "Courses Not Found",
-                Data = null
-            };
 
-            var responseData = courses.Select(c => new CourseResponseDto
+            // Validate and ensure pageSize and pageNumber are reasonable
+            pageSize = pageSize > 0 ? pageSize : 10;
+            pageNumber = pageNumber > 0 ? pageNumber : 1;
+
+            if (courses == null || !courses.Any())
+            {
+                return new PagedResponse<IEnumerable<CourseResponseDto>>
+                {
+                    IsSuccessful = false,
+                    Message = "Courses Not Found",
+                    Data = null
+                };
+            }
+
+            var totalRecords = courses.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<CourseResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more courses available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<CourseResponseDto>()
+                };
+            }
+
+            // Paginate the courses
+            var paginatedCourses = courses
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var responseData = paginatedCourses.Select(c => new CourseResponseDto
             {
                 Id = c.Id,
                 CourseTitle = c.CourseTitle,
@@ -119,32 +152,42 @@ namespace App.Application.Services
                 Status = c.Status
             }).ToList();
 
-            return new ApiResponse<IEnumerable<CourseResponseDto>>
+            return new PagedResponse<IEnumerable<CourseResponseDto>>
             {
-
                 IsSuccessful = true,
                 Message = "Courses Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
                 Data = responseData
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<CourseResponseDto>>> SearchCourseAsync(CourseSearchRequestDto request)
+
+        public async Task<PagedResponse<IEnumerable<CourseResponseDto>>> SearchCourseAsync(CourseSearchRequestDto request)
         {
             var courses = await courseRepository.GetCoursesAsync();
             var searchedCourses = courses.Where(course =>
-            (!string.IsNullOrEmpty(request.CourseTitle) && course.CourseTitle.Contains(request.CourseTitle, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrEmpty(request.CourseCode) && course.CourseCode.Contains(request.CourseCode, StringComparison.OrdinalIgnoreCase))
-             );
+                                !string.IsNullOrEmpty(request.SearchQuery) &&
+                                (course.CourseTitle.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || course.CourseCode.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || course.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                            ).ToList();
 
-            if (!searchedCourses.Any()) return new ApiResponse<IEnumerable<CourseResponseDto>>
+
+            if (!searchedCourses.Any()) return new PagedResponse<IEnumerable<CourseResponseDto>>
             {
                 IsSuccessful = false,
                 Message = "No Match Found",
                 Data = null
             };
 
-            int pageNumber = 1;
-            int pageSize = 10;
+            var totalRecords = searchedCourses.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+            int pageNumber = request.PageNumber;
+            int pageSize = request.PageSize;
             var paginatedCourses = searchedCourses
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -159,10 +202,14 @@ namespace App.Application.Services
                 Status = c.Status
             }).ToList();
 
-            return new ApiResponse<IEnumerable<CourseResponseDto>>
+            return new PagedResponse<IEnumerable<CourseResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Courses Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
                 Data = responseData
             };
         }

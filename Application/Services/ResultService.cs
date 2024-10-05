@@ -90,9 +90,40 @@ namespace App.Application.Services
             };
         }
 
-        public Task<ApiResponse<ResultResponseDto>> UpdateAsync(string membershipNumber, UpdateResultRequestDto request)
+        public async Task<ApiResponse<ResultResponseDto>> UpdateAsync(string membershipNumber, UpdateResultRequestDto request)
         {
-            throw new NotImplementedException();
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber
+                            && r.ExaminationId == request.ExaminationId);
+
+            if(result == null) return new ApiResponse<ResultResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Result not found",
+                Data = null
+            };
+
+            result.TotalScore = request.TotalScore ?? result.TotalScore;
+            result.Breakdown = request.Breakdown ?? result.Breakdown;
+            result.ModifiedBy = loginUser;
+            result.ModifiedOn = DateTime.Now;
+
+            resultRepository.Update(result);
+            await unitOfWork.SaveAsync();
+
+            return new ApiResponse<ResultResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Result updated successfully",
+                Data = new ResultResponseDto
+                {
+                    Id = result.Id,
+                    FullName = $"{result.User.FirstName} {result.User.LastName}",
+                    ExamTitle = result.Examination.ExamTitle,
+                    TotalScore = result.TotalScore,
+                    Breakdown = result.Breakdown
+                }
+            };
         }
 
         public async Task<ApiResponse<IEnumerable<ResultResponseDto>>> UploadResultAsync(IFormFile file)

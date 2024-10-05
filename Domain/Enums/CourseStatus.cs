@@ -3,6 +3,9 @@
     public enum CourseStatus
     {
         Active = 1,
-
+        Inactive,
+        Upcoming,
+        Completed,
+        Cancelled
     }
 }

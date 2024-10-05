@@ -13,5 +13,6 @@ namespace App.Core.DTOs.Requests.CreateRequestDtos
         public required int Duration { get; set; }
         public required int Capacity { get; set; }
         public TrainingCategory Category { get; set; }
+        public TrainingStatus Status { get; set; }
     }
 }

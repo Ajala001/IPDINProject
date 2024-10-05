@@ -64,5 +64,24 @@ namespace App.Presentation.Controllers
             if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }
+
+        [HttpPost("accept/{applicationId}")]
+        public async Task<IActionResult> AcceptApplication([FromRoute] Guid applicationId)
+        {
+            var result = await sender.Send(new AcceptApplicationCommand(applicationId));
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
+            return Ok(result);
+        }
+
+        [HttpPost("reject/{applicationId}")]
+        public async Task<IActionResult> RejectApplication([FromRoute] Guid applicationId, [FromBody] RejectionApplicationRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.RejectionReason)) 
+                return BadRequest(new { message = "Rejection reason is required." });
+
+            var result = await sender.Send(new RejectApplicationCommand(applicationId, request));
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
+            return Ok(result);
+        }
     }
 }

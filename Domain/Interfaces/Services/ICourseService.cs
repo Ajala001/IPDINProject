@@ -11,8 +11,8 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<CourseResponseDto>> CreateAsync(CreateCourseRequestDto request);
         Task<ApiResponse<CourseResponseDto>> UpdateAsync(Guid id, UpdateCourseRequestDto request);
         Task<ApiResponse<CourseResponseDto>> DeleteAsync(Guid id);
-        Task<ApiResponse<IEnumerable<CourseResponseDto>>> GetCoursesAsync();
+        Task<PagedResponse<IEnumerable<CourseResponseDto>>> GetCoursesAsync(int pageSize, int pageNumber);
         Task<ApiResponse<CourseResponseDto>> GetCourseAsync(Guid id);
-        Task<ApiResponse<IEnumerable<CourseResponseDto>>> SearchCourseAsync(CourseSearchRequestDto request);
+        Task<PagedResponse<IEnumerable<CourseResponseDto>>> SearchCourseAsync(CourseSearchRequestDto request);
     }
 }

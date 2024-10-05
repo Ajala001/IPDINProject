@@ -5,11 +5,7 @@ namespace App.Core.DTOs.Requests.UpdateRequestDtos
 {
     public class UpdateUserRequestDto
     {
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public Gender? Gender { get; set; }
         public string? PhoneNumber { get; set; }
-        public string? Email { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public IFormFile? ProfilePic { get; set; }
         public short? StreetNo { get; set; }

@@ -3,6 +3,7 @@ using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
+using App.Core.Enums;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using DinkToPdf;
@@ -148,7 +149,6 @@ namespace App.Application.Services
             };
 
             application.ApplicationPurpose = request.ApplicationPurpose ?? application.ApplicationPurpose;
-            application.Status = request.Status ?? application.Status;
             application.ModifiedBy = loginUser;
             application.ModifiedOn = DateTime.UtcNow;
 
@@ -199,6 +199,45 @@ namespace App.Application.Services
                 Message = "Successfully Generated",
                 Data = converter.Convert(document)
             }; 
+        }
+
+        public async Task<ApiResponse<AppApplicationResponseDto>> AcceptApplicationAsync(Guid id)
+        {
+            var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
+            if (application == null) return new ApiResponse<AppApplicationResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Application not found"
+            };
+
+            application.Status = ApplicationStatus.Accepted;
+            await unitOfWork.SaveAsync();
+
+            return new ApiResponse<AppApplicationResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Application Accepted Successfully"
+            };
+        }
+
+        public async Task<ApiResponse<string>> RejectApplicationAsync(Guid id, RejectionApplicationRequestDto request)
+        {
+            var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
+            if (application == null) return new ApiResponse<string>
+            {
+                IsSuccessful = false,
+                Message = "Application not found"
+            };
+
+            application.Status = ApplicationStatus.Rejected;
+            await unitOfWork.SaveAsync();
+
+            return new ApiResponse<string>
+            {
+                IsSuccessful = true,
+                Message = "Application Rejected",
+                Data = request.RejectionReason
+            };
         }
     }
 }

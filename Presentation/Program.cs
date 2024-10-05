@@ -1,9 +1,5 @@
-using App.Core.Entities;
-using App.Infrastructure.Data;
-using App.Infrastructure.Identity;
 using App.Infrastructure.Persistence;
 using App.Presentation;
-using Microsoft.AspNetCore.Identity;
 
 
 var builder = WebApplication.CreateBuilder(args);

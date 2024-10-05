@@ -120,7 +120,7 @@ namespace App.Infrastructure.ExternalServices
         {
             var loginUser = _contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var user = await _userManager.FindByEmailAsync(loginUser!);
-            var response = await GetFeeAndEntityNameAsync(requestDto.ReasonForPayment, requestDto.EntityId);
+            var response = await GetFeeAndEntityNameAsync(requestDto.ReasonForPayment, requestDto.EntityId.GetValueOrDefault(), user);
             TransactionInitializeRequest request = new TransactionInitializeRequest()
             {
                 AmountInKobo = response.fee * 100, //to get the kobo value of the amount
@@ -196,7 +196,7 @@ namespace App.Infrastructure.ExternalServices
             };
         }
 
-        private async Task<(int fee, string entityName)> GetFeeAndEntityNameAsync(string paymentReason, Guid entityId)
+        private async Task<(int fee, string entityName)> GetFeeAndEntityNameAsync(string paymentReason, Guid entityId, User user)
         {
             int fee = 0;
             string entityName = string.Empty;
@@ -215,31 +215,64 @@ namespace App.Infrastructure.ExternalServices
                 fee = exam.Fee;
                 entityName = exam.ExamTitle;
             }
+            else if (paymentReason == "Dues")
+            {
+                var userRegistrationType = user.RegistrationType ?? throw new Exception("User is not registered");
+                fee = userRegistrationType.Dues;
+                entityName = userRegistrationType.Name;
+            }
             return (fee, entityName);
         }
 
         public async Task<Core.DTOs.Responses.ApiResponse<string>> VerifyPaymentAsync(string referenceNo)
         {
             TransactionVerifyResponse response = PayStack.Transactions.Verify(referenceNo);
+            if (response.Data == null)
+            {
+                return new Core.DTOs.Responses.ApiResponse<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Payment verification failed: No response data."
+                };
+            }
+
+            var payment = await _paymentRepository.GetPaymentAsync(p => p.PaymentRef == referenceNo);
             if (response.Data.Status == "success")
             {
-                var payment = await _paymentRepository.GetPaymentAsync(p => p.PaymentRef == referenceNo);
                 if (payment != null)
                 {
                     payment.Status = Core.Enums.PaymentStatus.Successful;
                     _paymentRepository.Update(payment);
                     await _unitOfWork.SaveAsync();
+
                     return new Core.DTOs.Responses.ApiResponse<string>
                     {
                         IsSuccessful = true,
-                        Message = response.Message
+                        Message = response.Message // Success message from Paystack
                     };
                 }
             }
+            else if (response.Data.Status == "failed")
+            {
+                if (payment != null)
+                {
+                    payment.Status = Core.Enums.PaymentStatus.Failed;
+                    _paymentRepository.Update(payment);
+                    await _unitOfWork.SaveAsync();
+
+                    return new Core.DTOs.Responses.ApiResponse<string>
+                    {
+                        IsSuccessful = false,
+                        Message = response.Message // Failure message from Paystack
+                    };
+                }
+            }
+
+            // If payment is not found
             return new Core.DTOs.Responses.ApiResponse<string>
             {
-                IsSuccessful = true,
-                Message = response.Data.GatewayResponse
+                IsSuccessful = false,
+                Message = "Payment not found."
             };
         }
     }

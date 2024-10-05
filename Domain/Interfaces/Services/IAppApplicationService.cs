@@ -12,6 +12,8 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<AppApplicationResponseDto>> DeleteAsync(Guid id);
         Task<ApiResponse<IEnumerable<AppApplicationResponseDto>>> GetAppApplicationsAsync();
         Task<ApiResponse<AppApplicationResponseDto>> GetAppApplicationAsync(Guid id);
+        Task<ApiResponse<AppApplicationResponseDto>> AcceptApplicationAsync(Guid id);
+        Task<ApiResponse<string>> RejectApplicationAsync(Guid id, RejectionApplicationRequestDto request);
         Task<ApiResponse<byte[]>> GenerateApplicationSlipAsync(Guid applicationId);
     }
 }

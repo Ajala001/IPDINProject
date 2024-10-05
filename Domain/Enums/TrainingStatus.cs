@@ -5,6 +5,7 @@
         Scheduled = 1,
         Ongoing,
         Completed,
-        Cancelled
+        Cancelled,
+        Upcoming
     }
 }

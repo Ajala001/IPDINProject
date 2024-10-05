@@ -98,11 +98,6 @@ namespace App.Application.Services
                 }
             }
 
-            user.FirstName = request.FirstName ?? user.FirstName;
-            user.LastName = request.LastName ?? user.LastName;
-            user.Gender = request.Gender ?? user.Gender;
-            user.PhoneNumber = request.PhoneNumber ?? user.PhoneNumber;
-            user.Email = request.Email ?? user.Email;
             user.DateOfBirth = request.DateOfBirth ?? user.DateOfBirth;
             user.StreetNo = request.StreetNo ?? user.StreetNo;
             user.StreetName = request.StreetName ?? user.StreetName;

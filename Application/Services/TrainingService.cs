@@ -39,7 +39,7 @@ namespace App.Application.Services
                 Duration = request.Duration,
                 Capacity = request.Capacity,
                 Category = request.Category,
-                Status = Core.Enums.TrainingStatus.Scheduled,
+                Status = request.Status,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow,
             };
@@ -170,14 +170,14 @@ namespace App.Application.Services
                 Data = null
             };
 
-            int pageNumber = 1;
-            int pageSize = 10;
-            var paginatedCourses = searchedTrainings
+            int pageNumber = request.PageNumber;
+            int pageSize = request.PageSize;
+            var paginatedTrainings = searchedTrainings
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
 
-            var responseData = paginatedCourses.Select(t => new TrainingResponseDto
+            var responseData = paginatedTrainings.Select(t => new TrainingResponseDto
             {
                 Id = t.Id,
                 Title = t.Title,
