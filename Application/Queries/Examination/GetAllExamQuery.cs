@@ -4,14 +4,14 @@ using MediatR;
 
 namespace App.Application.Queries.Examination
 {
-    public record GetAllExamQuery() : IRequest<ApiResponse<IEnumerable<ExaminationResponseDto>>>;
+    public record GetAllExamQuery(int PageSize, int PageNumber) : IRequest<PagedResponse<IEnumerable<ExaminationResponseDto>>>;
 
     public class GetAllExamQueryHandler(IExaminationService examinationService) 
-        : IRequestHandler<GetAllExamQuery, ApiResponse<IEnumerable<ExaminationResponseDto>>>
+        : IRequestHandler<GetAllExamQuery, PagedResponse<IEnumerable<ExaminationResponseDto>>>
     {
-        public async Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> Handle(GetAllExamQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> Handle(GetAllExamQuery request, CancellationToken cancellationToken)
         {
-            return await examinationService.GetExaminationsAsync();
+            return await examinationService.GetExaminationsAsync(request.PageSize, request.PageNumber);
         }
     }
 }

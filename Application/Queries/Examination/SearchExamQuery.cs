@@ -6,12 +6,12 @@ using MediatR;
 namespace App.Application.Queries.Examination
 {
     public record SearchExamQuery(ExaminationSearchRequestDto SearchRequestDto) 
-        : IRequest<ApiResponse<IEnumerable<ExaminationResponseDto>>>;
+        : IRequest<PagedResponse<IEnumerable<ExaminationResponseDto>>>;
 
     public class SearchExamQueryHandler(IExaminationService examinationService)
-        : IRequestHandler<SearchExamQuery, ApiResponse<IEnumerable<ExaminationResponseDto>>>
+        : IRequestHandler<SearchExamQuery, PagedResponse<IEnumerable<ExaminationResponseDto>>>
     {
-        public async Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> Handle(SearchExamQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> Handle(SearchExamQuery request, CancellationToken cancellationToken)
         {
             return await examinationService.SearchExaminationAsync(request.SearchRequestDto);
         }

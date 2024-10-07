@@ -2,7 +2,6 @@
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
-using App.Core.Entities;
 
 namespace App.Core.Interfaces.Services
 {
@@ -11,8 +10,8 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<ExaminationResponseDto>> CreateAsync(CreateExaminationRequestDto request);
         Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request);
         Task<ApiResponse<ExaminationResponseDto>> DeleteAsync(Guid id);
-        Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> GetExaminationsAsync();
+        Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> GetExaminationsAsync(int pageSize, int pageNumber);
         Task<ApiResponse<ExaminationResponseDto>> GetExaminationAsync(Guid id);
-        Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request);
+        Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request);
     }
 }

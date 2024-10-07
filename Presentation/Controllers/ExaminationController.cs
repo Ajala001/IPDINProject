@@ -24,9 +24,9 @@ namespace App.Presentation.Controllers
 
         [Authorize(Roles = "Admin, Member")]
         [HttpGet]
-        public async Task<IActionResult> GetAllExaminationAsync()
+        public async Task<IActionResult> GetAllExaminationAsync(int pageSize, int pageNumber)
         {
-            var result = await sender.Send(new GetAllExamQuery());
+            var result = await sender.Send(new GetAllExamQuery(pageSize, pageNumber));
             if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }

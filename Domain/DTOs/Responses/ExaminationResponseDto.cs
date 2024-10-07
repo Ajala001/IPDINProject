@@ -8,8 +8,8 @@ namespace App.Core.DTOs.Responses
         public string ExamTitle { get; set; } = null!;
         public string ExamDate { get; set; } = null!;
         public string ExamTime { get; set; } =null!;
-        public short ExamYear { get; set; } 
-        public decimal Fee { get; set; }
+        public short ExamYear { get; set; }
+        public string Fee { get; set; } = null!;
         public ICollection<CourseResponseDto> Courses { get; set; } = new List<CourseResponseDto>();
     }
 }

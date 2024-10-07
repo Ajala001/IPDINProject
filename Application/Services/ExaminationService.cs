@@ -43,6 +43,7 @@ namespace App.Application.Services
                 Id = Guid.NewGuid(),
                 ExamTitle = request.ExamTitle,
                 ExamDateAndTime = request.ExamDateAndTime,
+                ExamYear = request.ExamYear,
                 Fee = request.Fee,
                 Courses = courses,
                 CreatedBy = loginUser!,
@@ -62,13 +63,14 @@ namespace App.Application.Services
                     ExamDate = newExamination.ExamDateAndTime.ToString("D"),
                     ExamTime = newExamination.ExamDateAndTime.ToString("t"),
                     ExamYear = newExamination.ExamYear,
-                    Fee = newExamination.Fee,
+                    Fee = newExamination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = newExamination.Courses.Select(c => new CourseResponseDto
                     {
                         Id = c.Id,
                         CourseTitle = c.CourseTitle,
                         CourseCode = c.CourseCode,
-                        CourseUnit = c.CourseUnit
+                        CourseUnit = c.CourseUnit,
+                        Status = c.Status
                     }).ToList()
                 }
             };
@@ -116,54 +118,85 @@ namespace App.Application.Services
                     ExamDate = examination.ExamDateAndTime.ToString("D"),
                     ExamTime = examination.ExamDateAndTime.ToString("t"),
                     ExamYear = examination.ExamYear,
-                    Fee = examination.Fee,
+                    Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = examination.Courses.Select(c => new CourseResponseDto
                     {
                         Id = c.Id,
                         CourseTitle = c.CourseTitle,
                         CourseCode = c.CourseCode,
-                        CourseUnit = c.CourseUnit
+                        CourseUnit = c.CourseUnit,
+                        Status = c.Status
                     }).ToList()
                 }
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> GetExaminationsAsync()
+        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> GetExaminationsAsync(int pageSize, int pageNumber)
         {
             var examinations = await examinationRepository.GetExaminationsAsync();
-            if(!examinations.Any()) return new ApiResponse<IEnumerable<ExaminationResponseDto>>
+
+            pageSize = pageSize > 0 ? pageSize : 10;
+            pageNumber = pageNumber > 0 ? pageNumber : 1;
+
+            if (examinations == null || !examinations.Any()) return new PagedResponse<IEnumerable<ExaminationResponseDto>>
             {
                 IsSuccessful = false,
                 Message = "No Records For Examinations",
                 Data = null
             };
 
-            var responseData = examinations.Select(examination => new ExaminationResponseDto
+            var totalRecords = examinations.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<ExaminationResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more examinations available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<ExaminationResponseDto>()
+                };
+            }
+
+            // Paginate the examinations
+            var paginatedExams = examinations
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedResponseData = paginatedExams.Select(examination => new ExaminationResponseDto
             {
                 Id = examination.Id,
                 ExamTitle = examination.ExamTitle,
                 ExamDate = examination.ExamDateAndTime.ToString("D"),
                 ExamTime = examination.ExamDateAndTime.ToString("t"),
                 ExamYear = examination.ExamYear,
-                Fee = examination.Fee,
+                Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 Courses = examination.Courses.Select(c => new CourseResponseDto
                 {
                     Id = c.Id,
                     CourseTitle = c.CourseTitle,
                     CourseCode = c.CourseCode,
-                    CourseUnit = c.CourseUnit
+                    CourseUnit = c.CourseUnit,
+                    Status = c.Status
                 }).ToList()
             }).ToList();
 
-            return new ApiResponse<IEnumerable<ExaminationResponseDto>>
+
+            return new PagedResponse<IEnumerable<ExaminationResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Examinations Retrieved Successfuly",
-                Data = responseData
+                Data = paginatedResponseData
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request)
+        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request)
         {
             // Fetch examinations with included courses
             var examinations = await examinationRepository.GetExaminationsAsync();
@@ -171,15 +204,17 @@ namespace App.Application.Services
             // Filter examinations based on the search criteria
             var filteredExaminations = examinations
                 .Where(exam =>
-                    (string.IsNullOrEmpty(request.CourseTitle) || exam.Courses.Any(c => c.CourseTitle.Contains(request.CourseTitle, StringComparison.OrdinalIgnoreCase)))
-                    && (string.IsNullOrEmpty(request.CourseCode) || exam.Courses.Any(c => c.CourseCode.Contains(request.CourseCode, StringComparison.OrdinalIgnoreCase)))
-                    && (request.ExamYear == default || exam.ExamYear == request.ExamYear)
-                );
+                    !string.IsNullOrEmpty(request.SearchQuery) && (
+                    exam.Courses.Any(c => c.CourseTitle.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                    exam.Courses.Any(c => c.CourseCode.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                    (short.TryParse(request.SearchQuery, out short examYear) && exam.ExamYear == examYear))
+                ).ToList();
+
 
             // Check if there are results
             if (!filteredExaminations.Any())
             {
-                return new ApiResponse<IEnumerable<ExaminationResponseDto>>
+                return new PagedResponse<IEnumerable<ExaminationResponseDto>>
                 {
                     IsSuccessful = false,
                     Message = "No Match Found",
@@ -200,7 +235,7 @@ namespace App.Application.Services
             // Map to DTOs
             var responseData = paginatedExams.Select(MapToExaminationResponseDto).ToList();
 
-            return new ApiResponse<IEnumerable<ExaminationResponseDto>>
+            return new PagedResponse<IEnumerable<ExaminationResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Examinations Retrieved Successfully",
@@ -218,13 +253,14 @@ namespace App.Application.Services
                 ExamDate = examination.ExamDateAndTime.ToString("D"),
                 ExamTime = examination.ExamDateAndTime.ToString("t"),
                 ExamYear = examination.ExamYear,
-                Fee = examination.Fee,
+                Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 Courses = examination.Courses.Select(c => new CourseResponseDto
                 {
                     Id = c.Id,
                     CourseTitle = c.CourseTitle,
                     CourseCode = c.CourseCode,
-                    CourseUnit = c.CourseUnit
+                    CourseUnit = c.CourseUnit,
+                    Status = c.Status
                 }).ToList()
             };
         }
@@ -262,13 +298,14 @@ namespace App.Application.Services
                     ExamDate = examination.ExamDateAndTime.ToString("D"),
                     ExamTime = examination.ExamDateAndTime.ToString("t"),
                     ExamYear = examination.ExamYear,
-                    Fee = examination.Fee,
+                    Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = examination.Courses.Select(c => new CourseResponseDto
                     {
                         Id = c.Id,
                         CourseTitle = c.CourseTitle,
                         CourseCode = c.CourseCode,
-                        CourseUnit = c.CourseUnit
+                        CourseUnit = c.CourseUnit,
+                        Status = c.Status
                     }).ToList()
                 }
             };

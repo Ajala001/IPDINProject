@@ -5,7 +5,6 @@ using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
-using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
@@ -119,6 +118,28 @@ namespace App.Application.Services
                 };
             }
 
+            // If pageSize and pageNumber are not provided (null or 0), return all courses without pagination
+            if (pageSize == 0 || pageNumber == 0)
+            {
+                var responseData = courses.Select(c => new CourseResponseDto
+                {
+                    Id = c.Id,
+                    CourseTitle = c.CourseTitle,
+                    CourseCode = c.CourseCode,
+                    CourseUnit = c.CourseUnit,
+                    Status = c.Status
+                }).ToList();
+
+                return new PagedResponse<IEnumerable<CourseResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "Courses Retrieved Successfully",
+                    TotalRecords = courses.Count(),
+                    Data = responseData
+                };
+            }
+
+
             var totalRecords = courses.Count();
             var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
@@ -143,7 +164,7 @@ namespace App.Application.Services
                 .Take(pageSize)
                 .ToList();
 
-            var responseData = paginatedCourses.Select(c => new CourseResponseDto
+            var paginatedResponseData = paginatedCourses.Select(c => new CourseResponseDto
             {
                 Id = c.Id,
                 CourseTitle = c.CourseTitle,
@@ -160,7 +181,7 @@ namespace App.Application.Services
                 TotalPages = totalPages,
                 PageSize = pageSize,
                 CurrentPage = pageNumber,
-                Data = responseData
+                Data = paginatedResponseData
             };
         }
 
