@@ -29,9 +29,9 @@ namespace App.Infrastructure.Repositories
             return await dbContext.Applications.FirstOrDefaultAsync(predicate);
         }
 
-        public async Task<IEnumerable<AppApplication>> GetApplicationsAsync()
+        public IQueryable<AppApplication> GetApplicationsAsync()
         {
-            return await dbContext.Applications.ToListAsync();
+            return dbContext.Applications.AsQueryable();
         }
 
         public AppApplication Update(AppApplication application)

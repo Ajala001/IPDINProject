@@ -103,11 +103,6 @@ namespace App.Application.Services
         public async Task<PagedResponse<IEnumerable<CourseResponseDto>>> GetCoursesAsync(int pageSize, int pageNumber)
        {
             var courses = await courseRepository.GetCoursesAsync();
-
-            // Validate and ensure pageSize and pageNumber are reasonable
-            pageSize = pageSize > 0 ? pageSize : 10;
-            pageNumber = pageNumber > 0 ? pageNumber : 1;
-
             if (courses == null || !courses.Any())
             {
                 return new PagedResponse<IEnumerable<CourseResponseDto>>
@@ -186,7 +181,7 @@ namespace App.Application.Services
         }
 
 
-        public async Task<PagedResponse<IEnumerable<CourseResponseDto>>> SearchCourseAsync(CourseSearchRequestDto request)
+        public async Task<PagedResponse<IEnumerable<CourseResponseDto>>> SearchCourseAsync(SearchQueryRequestDto request)
         {
             var courses = await courseRepository.GetCoursesAsync();
             var searchedCourses = courses.Where(course =>
@@ -204,11 +199,13 @@ namespace App.Application.Services
                 Data = null
             };
 
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+
             var totalRecords = searchedCourses.Count();
             var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
 
-            int pageNumber = request.PageNumber;
-            int pageSize = request.PageSize;
+          
             var paginatedCourses = searchedCourses
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)

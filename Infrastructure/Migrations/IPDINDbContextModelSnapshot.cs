@@ -64,6 +64,9 @@ namespace App.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("ApplicationPurpose")
                         .HasColumnType("longtext");
 
@@ -77,9 +80,6 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid?>("ExaminationId")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
 
@@ -88,9 +88,6 @@ namespace App.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
-
-                    b.Property<Guid?>("TrainingId")
-                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
@@ -173,9 +170,43 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("Examinations");
+                });
+
+            modelBuilder.Entity("App.Core.Entities.Level", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Dues")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Levels");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Payment", b =>
@@ -219,37 +250,6 @@ namespace App.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Payments");
-                });
-
-            modelBuilder.Entity("App.Core.Entities.RegistrationType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Dues")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RegistrationTypes");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Result", b =>
@@ -407,6 +407,9 @@ namespace App.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<Guid>("LevelId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("LocalGovt")
                         .HasColumnType("longtext");
 
@@ -449,9 +452,6 @@ namespace App.Infrastructure.Migrations
                     b.Property<string>("ProfilePic")
                         .HasColumnType("longtext");
 
-                    b.Property<Guid>("RegistrationTypeId")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("longtext");
 
@@ -483,14 +483,14 @@ namespace App.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LevelId");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
-
-                    b.HasIndex("RegistrationTypeId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -767,13 +767,13 @@ namespace App.Infrastructure.Migrations
 
             modelBuilder.Entity("App.Core.Entities.User", b =>
                 {
-                    b.HasOne("App.Core.Entities.RegistrationType", "RegistrationType")
+                    b.HasOne("App.Core.Entities.Level", "Level")
                         .WithMany("Users")
-                        .HasForeignKey("RegistrationTypeId")
+                        .HasForeignKey("LevelId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("RegistrationType");
+                    b.Navigation("Level");
                 });
 
             modelBuilder.Entity("App.Core.Entities.UserAcademicQualifications", b =>
@@ -935,7 +935,7 @@ namespace App.Infrastructure.Migrations
                     b.Navigation("Result");
                 });
 
-            modelBuilder.Entity("App.Core.Entities.RegistrationType", b =>
+            modelBuilder.Entity("App.Core.Entities.Level", b =>
                 {
                     b.Navigation("Users");
                 });

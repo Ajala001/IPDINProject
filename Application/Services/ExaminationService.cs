@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace App.Application.Services
 {
     public class ExaminationService(IHttpContextAccessor httpContextAccessor, ICourseRepository courseRepository,
-        IUnitOfWork unitOfWork, IExaminationRepository examinationRepository) 
+        IUnitOfWork unitOfWork, IExaminationRepository examinationRepository)
         : IExaminationService
     {
         public async Task<ApiResponse<ExaminationResponseDto>> CreateAsync(CreateExaminationRequestDto request)
@@ -21,7 +21,7 @@ namespace App.Application.Services
                                      e.ExamTitle == request.ExamTitle &&
                                      e.ExamYear == request.ExamYear);
 
-            if(existingExamination != null) return new ApiResponse<ExaminationResponseDto>
+            if (existingExamination != null) return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Examination Already Exist",
@@ -45,6 +45,7 @@ namespace App.Application.Services
                 ExamDateAndTime = request.ExamDateAndTime,
                 ExamYear = request.ExamYear,
                 Fee = request.Fee,
+                Status = request.Status,
                 Courses = courses,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
@@ -63,6 +64,7 @@ namespace App.Application.Services
                     ExamDate = newExamination.ExamDateAndTime.ToString("D"),
                     ExamTime = newExamination.ExamDateAndTime.ToString("t"),
                     ExamYear = newExamination.ExamYear,
+                    Status = newExamination.Status,
                     Fee = newExamination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = newExamination.Courses.Select(c => new CourseResponseDto
                     {
@@ -91,7 +93,7 @@ namespace App.Application.Services
 
             return new ApiResponse<ExaminationResponseDto>
             {
-                IsSuccessful = false,
+                IsSuccessful = true,
                 Message = "Examination Deleted Successfully",
                 Data = null
             };
@@ -99,7 +101,7 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<ExaminationResponseDto>> GetExaminationAsync(Guid id)
         {
-            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id);
+            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id, true);
             if (examination == null) return new ApiResponse<ExaminationResponseDto>
             {
                 IsSuccessful = false,
@@ -118,6 +120,7 @@ namespace App.Application.Services
                     ExamDate = examination.ExamDateAndTime.ToString("D"),
                     ExamTime = examination.ExamDateAndTime.ToString("t"),
                     ExamYear = examination.ExamYear,
+                    Status = examination.Status,
                     Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = examination.Courses.Select(c => new CourseResponseDto
                     {
@@ -135,7 +138,7 @@ namespace App.Application.Services
         {
             var examinations = await examinationRepository.GetExaminationsAsync();
 
-            pageSize = pageSize > 0 ? pageSize : 10;
+            pageSize = pageSize > 0 ? pageSize : 5;
             pageNumber = pageNumber > 0 ? pageNumber : 1;
 
             if (examinations == null || !examinations.Any()) return new PagedResponse<IEnumerable<ExaminationResponseDto>>
@@ -176,6 +179,7 @@ namespace App.Application.Services
                 ExamDate = examination.ExamDateAndTime.ToString("D"),
                 ExamTime = examination.ExamDateAndTime.ToString("t"),
                 ExamYear = examination.ExamYear,
+                Status = examination.Status,
                 Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 Courses = examination.Courses.Select(c => new CourseResponseDto
                 {
@@ -192,22 +196,25 @@ namespace App.Application.Services
             {
                 IsSuccessful = true,
                 Message = "Examinations Retrieved Successfuly",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
                 Data = paginatedResponseData
             };
         }
 
-        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request)
+        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(SearchQueryRequestDto request)
         {
             // Fetch examinations with included courses
             var examinations = await examinationRepository.GetExaminationsAsync();
-
-            // Filter examinations based on the search criteria
             var filteredExaminations = examinations
                 .Where(exam =>
                     !string.IsNullOrEmpty(request.SearchQuery) && (
                     exam.Courses.Any(c => c.CourseTitle.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
                     exam.Courses.Any(c => c.CourseCode.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
-                    (short.TryParse(request.SearchQuery, out short examYear) && exam.ExamYear == examYear))
+                    (short.TryParse(request.SearchQuery, out short examYear) && exam.ExamYear == examYear) ||
+                    exam.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
                 ).ToList();
 
 
@@ -222,9 +229,12 @@ namespace App.Application.Services
                 };
             }
 
+            var totalRecords = filteredExaminations.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
             // Pagination parameters
             int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1; // Default to page 1 if invalid
-            int pageSize = request.PageSize > 0 ? request.PageSize : 10; // Default to page size 10 if invalid
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5; // Default to page size 5 if invalid
 
             // Paginate the results
             var paginatedExams = filteredExaminations
@@ -239,6 +249,10 @@ namespace App.Application.Services
             {
                 IsSuccessful = true,
                 Message = "Examinations Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
                 Data = responseData
             };
         }
@@ -253,6 +267,7 @@ namespace App.Application.Services
                 ExamDate = examination.ExamDateAndTime.ToString("D"),
                 ExamTime = examination.ExamDateAndTime.ToString("t"),
                 ExamYear = examination.ExamYear,
+                Status = examination.Status,
                 Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 Courses = examination.Courses.Select(c => new CourseResponseDto
                 {
@@ -269,20 +284,40 @@ namespace App.Application.Services
         public async Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request)
         {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id);
-            if (examination == null) return new ApiResponse<ExaminationResponseDto>
+            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id, includeCourses: true);
+            if (examination == null)
             {
-                IsSuccessful = false,
-                Message = "Examination Not Found",
-                Data = null
-            };
+                return new ApiResponse<ExaminationResponseDto>
+                {
+                    IsSuccessful = false,
+                    Message = "Examination Not Found",
+                    Data = null
+                };
+            }
 
+            // Update examination details
             examination.ExamTitle = request.ExamTitle ?? examination.ExamTitle;
             examination.ExamYear = request.ExamYear ?? examination.ExamYear;
             examination.Fee = request.Fee ?? examination.Fee;
             examination.ExamDateAndTime = request.ExamDateAndTime ?? examination.ExamDateAndTime;
+            examination.Status = request.Status ?? examination.Status;
             examination.ModifiedOn = DateTime.UtcNow;
             examination.ModifiedBy = loginUser!;
+
+            // Update courses
+            if (request.SelectedCourses != null && request.SelectedCourses.Any())
+            {
+                // Get all the courses from the repository
+                var allCourses = await courseRepository.GetCoursesAsync();
+                var selectedCourses = allCourses.Where(c => request.SelectedCourses.Contains(c.Id)).ToList();
+
+                // Replace the courses with the selected ones
+                examination.Courses.Clear();
+                foreach (var course in selectedCourses)
+                {
+                    examination.Courses.Add(course);
+                }
+            }
 
             examinationRepository.Update(examination);
             await unitOfWork.SaveAsync();
@@ -298,6 +333,7 @@ namespace App.Application.Services
                     ExamDate = examination.ExamDateAndTime.ToString("D"),
                     ExamTime = examination.ExamDateAndTime.ToString("t"),
                     ExamYear = examination.ExamYear,
+                    Status = examination.Status,
                     Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = examination.Courses.Select(c => new CourseResponseDto
                     {

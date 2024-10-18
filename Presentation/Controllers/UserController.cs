@@ -1,5 +1,7 @@
 ﻿using App.Application.Commands.User;
+using App.Application.Queries.Course;
 using App.Application.Queries.User;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -13,9 +15,17 @@ namespace App.Presentation.Controllers
     {
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<IActionResult> GetAllUserAsync()
+        public async Task<IActionResult> GetAllUserAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
         {
-            var result = await sender.Send(new GetAllUserQuery());
+            var result = await sender.Send(new GetAllUserQuery(pageSize, pageNumber));
+            if (!result.IsSuccessful) return NotFound(result);
+            return Ok(result);
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchForUserAsync([FromQuery] SearchQueryRequestDto searchRequestDto)
+        {
+            var result = await sender.Send(new SearchUserQuery(searchRequestDto));
             if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }
@@ -31,7 +41,7 @@ namespace App.Presentation.Controllers
 
         [Authorize(Roles = "Admin, Member")]
         [HttpPut("{email}")]
-        public async Task<IActionResult> UpdateUserAsync([FromRoute] string email, [FromBody] UpdateUserRequestDto updateRequest)
+        public async Task<IActionResult> UpdateUserAsync([FromRoute] string email, [FromForm] UpdateUserRequestDto updateRequest)
         {
             var result = await sender.Send(new UpdateUserCommand(email, updateRequest));
             if (!result.IsSuccessful) return NotFound(result);

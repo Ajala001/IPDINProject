@@ -4,12 +4,11 @@ namespace App.Core.Entities
 {
     public class AppApplication : Auditables
     {
+        public Guid ApplicationId { get; set; }
         public Guid UserId { get; set; }
-        public User User { get; set; } = null!;
-        public Guid? ExaminationId { get; set; }
-        public Guid? TrainingId { get; set; }
         public string? ApplicationPurpose { get; set; }
         public DateTime Date { get; set; }
         public ApplicationStatus Status { get; set; }
+        public required User User { get; set; }  
     }
 }

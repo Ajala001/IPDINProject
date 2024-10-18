@@ -4,14 +4,14 @@ using MediatR;
 
 namespace App.Application.Queries.AppApplication
 {
-    public record GetAllAppApplicationsQuery() : IRequest<ApiResponse<IEnumerable<AppApplicationResponseDto>>>;
+    public record GetAllAppApplicationsQuery(int PageSize, int PageNumber) : IRequest<PagedResponse<IEnumerable<AppApplicationResponseDto>>>;
 
     public class GetAllAppApplicationHandler(IAppApplicationService appApplicationService)
-        : IRequestHandler<GetAllAppApplicationsQuery, ApiResponse<IEnumerable<AppApplicationResponseDto>>>
+        : IRequestHandler<GetAllAppApplicationsQuery, PagedResponse<IEnumerable<AppApplicationResponseDto>>>
     {
-        public Task<ApiResponse<IEnumerable<AppApplicationResponseDto>>> Handle(GetAllAppApplicationsQuery request, CancellationToken cancellationToken)
+        public Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> Handle(GetAllAppApplicationsQuery request, CancellationToken cancellationToken)
         {
-            return appApplicationService.GetAppApplicationsAsync();
+            return appApplicationService.GetAppApplicationsAsync(request.PageSize, request.PageNumber);
         }
     }
 }

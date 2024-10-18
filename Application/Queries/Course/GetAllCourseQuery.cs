@@ -8,7 +8,7 @@ namespace App.Application.Queries.Course
 
     public class GetAllCourseQueryHandler(ICourseService courseService)
         : IRequestHandler<GetAllCourseQuery, PagedResponse<IEnumerable<CourseResponseDto>>>
-{
+    {
         public async Task<PagedResponse<IEnumerable<CourseResponseDto>>> Handle(GetAllCourseQuery request, CancellationToken cancellationToken)
         {
             return await courseService.GetCoursesAsync(request.PageSize, request.PageNumber);

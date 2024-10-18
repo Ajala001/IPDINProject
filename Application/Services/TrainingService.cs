@@ -6,7 +6,6 @@ using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace App.Application.Services
@@ -56,7 +55,7 @@ namespace App.Application.Services
                     Id = newTraining.Id,
                     Title = newTraining.Title,
                     Description = newTraining.Description,
-                    Fee = newTraining.Fee,
+                    Fee = newTraining.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = newTraining.StartingDateAndTime,
                     EndingDateAndTime = newTraining.EndingDateAndTime,
                     RegistrationDeadline = request.RegistrationDeadline,
@@ -89,36 +88,95 @@ namespace App.Application.Services
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<TrainingResponseDto>>> GetTainingsAsync()
+        public async Task<PagedResponse<IEnumerable<TrainingResponseDto>>> GetTainingsAsync(int pageSize, int pageNumber)
         {
             var trainings = await trainingRepository.GetTrainingsAsync();
-            if (!trainings.Any()) return new ApiResponse<IEnumerable<TrainingResponseDto>>
+            if (trainings == null || !trainings.Any())
             {
-                IsSuccessful = false,
-                Message = "Trainings Not Found",
-                Data = null
-            };
+                return new PagedResponse<IEnumerable<TrainingResponseDto>>
+                {
+                    IsSuccessful = false,
+                    Message = "Trainings Not Found",
+                    Data = null
+                };
+            }
 
-            var responseData = trainings.Select(t => new TrainingResponseDto
+            // If pageSize and pageNumber are not provided (null or 0), return all courses without pagination
+            if (pageSize == 0 || pageNumber == 0)
             {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Fee = t.Fee,
-                StartingDateAndTime = t.StartingDateAndTime,
-                EndingDateAndTime = t.EndingDateAndTime,
-                RegistrationDeadline = t.RegistrationDeadline,
-                Duration = t.Duration,
-                Capacity = t.Capacity,
-                Category = t.Category,
-                Status = t.Status
+                var responseData = trainings.Select(training => new TrainingResponseDto
+                {
+                    Id = training.Id,
+                    Title = training.Title,
+                    Description = training.Description,
+                    Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    StartingDateAndTime = training.StartingDateAndTime,
+                    EndingDateAndTime = training.EndingDateAndTime,
+                    RegistrationDeadline = training.RegistrationDeadline,
+                    Duration = training.Duration,
+                    Capacity = training.Capacity,
+                    Category = training.Category,
+                    Status = training.Status
+                }).ToList();
+
+                return new PagedResponse<IEnumerable<TrainingResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "Trainings Retrieved Successfully",
+                    TotalRecords = trainings.Count(),
+                    Data = responseData
+                };
+            }
+
+
+            var totalRecords = trainings.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<TrainingResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more training available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<TrainingResponseDto>()
+                };
+            }
+
+            // Paginate the trainings
+            var paginatedTrainings = trainings
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedResponseData = paginatedTrainings.Select(training => new TrainingResponseDto
+            {
+                Id = training.Id,
+                Title = training.Title,
+                Description = training.Description,
+                Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                StartingDateAndTime = training.StartingDateAndTime,
+                EndingDateAndTime = training.EndingDateAndTime,
+                RegistrationDeadline = training.RegistrationDeadline,
+                Duration = training.Duration,
+                Capacity = training.Capacity,
+                Category = training.Category,
+                Status = training.Status
             }).ToList();
 
-            return new ApiResponse<IEnumerable<TrainingResponseDto>>
+            return new PagedResponse<IEnumerable<TrainingResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Trainings Retrieved Successfully",
-                Data = responseData
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = paginatedResponseData
             };
         }
 
@@ -135,13 +193,13 @@ namespace App.Application.Services
             return new ApiResponse<TrainingResponseDto>
             {
                 IsSuccessful = true,
-                Message = "Training Retrieved Successfully",
+                Message = "Training retrievd Successfully",
                 Data = new TrainingResponseDto
                 {
                     Id = training.Id,
                     Title = training.Title,
                     Description = training.Description,
-                    Fee = training.Fee,
+                    Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = training.StartingDateAndTime,
                     EndingDateAndTime = training.EndingDateAndTime,
                     RegistrationDeadline = training.RegistrationDeadline,
@@ -151,51 +209,62 @@ namespace App.Application.Services
                     Status = training.Status
                 }
             };
-
         }
 
-        public async Task<ApiResponse<IEnumerable<TrainingResponseDto>>> SearchTrainingAsync(TrainingSearchRequestDto request)
+        public async Task<PagedResponse<IEnumerable<TrainingResponseDto>>> SearchTrainingAsync(SearchQueryRequestDto request)
         {
-            var trainings = trainingRepository.Query();
-            var trainingQuery = trainings.Where(training =>
-            (!string.IsNullOrEmpty(request.TrainingTitle) && training.Title.Contains(request.TrainingTitle, StringComparison.OrdinalIgnoreCase))
-            || (training.Category == request.Category) || (training.Status == request.Status)
-             );
+            var trainings = await trainingRepository.GetTrainingsAsync();
+            var searchedTrainings = trainings.Where(training =>
+                                !string.IsNullOrEmpty(request.SearchQuery) &&
+                                (training.Title.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || int.TryParse(request.SearchQuery, out int fee) && training.Fee == fee)
+                                || training.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || training.Category.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                            ).ToList();
 
-            var searchedTrainings = await trainingQuery.ToListAsync();
-            if (!searchedTrainings.Any()) return new ApiResponse<IEnumerable<TrainingResponseDto>>
+
+            if (!searchedTrainings.Any()) return new PagedResponse<IEnumerable<TrainingResponseDto>>
             {
                 IsSuccessful = false,
                 Message = "No Match Found",
                 Data = null
             };
 
-            int pageNumber = request.PageNumber;
-            int pageSize = request.PageSize;
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+
+            var totalRecords = searchedTrainings.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+
             var paginatedTrainings = searchedTrainings
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
 
-            var responseData = paginatedTrainings.Select(t => new TrainingResponseDto
+            var responseData = paginatedTrainings.Select(training => new TrainingResponseDto
             {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Fee = t.Fee,
-                StartingDateAndTime = t.StartingDateAndTime,
-                EndingDateAndTime = t.EndingDateAndTime,
-                RegistrationDeadline = t.RegistrationDeadline,
-                Duration = t.Duration,
-                Capacity = t.Capacity,
-                Category = t.Category,
-                Status = t.Status
+                Id = training.Id,
+                Title = training.Title,
+                Description = training.Description,
+                Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                StartingDateAndTime = training.StartingDateAndTime,
+                EndingDateAndTime = training.EndingDateAndTime,
+                RegistrationDeadline = training.RegistrationDeadline,
+                Duration = training.Duration,
+                Capacity = training.Capacity,
+                Category = training.Category,
+                Status = training.Status
             }).ToList();
 
-            return new ApiResponse<IEnumerable<TrainingResponseDto>>
+            return new PagedResponse<IEnumerable<TrainingResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Trainings Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
                 Data = responseData
             };
         }
@@ -233,7 +302,7 @@ namespace App.Application.Services
                     Id = training.Id,
                     Title = training.Title,
                     Description = training.Description,
-                    Fee = training.Fee,
+                    Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = training.StartingDateAndTime,
                     EndingDateAndTime = training.EndingDateAndTime,
                     RegistrationDeadline = training.RegistrationDeadline,

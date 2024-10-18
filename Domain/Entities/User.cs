@@ -4,7 +4,7 @@ namespace App.Core.Entities
 {
     public class User : IdentityUser<Guid>
     {
-        public Guid RegistrationTypeId { get; set; }
+        public Guid LevelId { get; set; }
         public required string LastName { get; set; }
         public required string FirstName { get; set; }
         public string? MembershipNumber { get; set; }
@@ -12,7 +12,7 @@ namespace App.Core.Entities
         public required Gender Gender { get; set; }
         public DateTime DateOfBirth { get; set; }
         public string? ProfilePic { get; set; }
-        public RegistrationType? RegistrationType { get; set; }
+        public Level? Level { get; set; }
         public short? StreetNo { get; set; }
         public string? StreetName { get; set; }
         public string? City { get; set; }

@@ -28,7 +28,7 @@ namespace App.Infrastructure
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IResultRepository, ResultRepository>();
             services.AddScoped<ITrainingRepository, TrainingRepository>();
-            services.AddScoped<IRegistrationTypeRepository, RegistrationTypeRepository>();
+            services.AddScoped<ILevelRepository, LevelRepository>();
             services.AddScoped<IFileRepository, FileRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 

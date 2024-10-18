@@ -1,6 +1,8 @@
 ﻿using App.Application.Commands.Payment;
+using App.Application.Queries.Course;
 using App.Application.Queries.Payment;
 using App.Core.DTOs.Requests.CreateRequestDtos;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,9 +16,9 @@ namespace App.Presentation.Controllers
     public class PaymentController(ISender sender) : ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> GetAllPaymentAsync()
+        public async Task<IActionResult> GetAllPaymentAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
         {
-            var result = await sender.Send(new GetAllPaymentQuery());
+            var result = await sender.Send(new GetAllPaymentQuery(pageSize, pageNumber));
             if (result.IsSuccessful) return Ok(result);
             return BadRequest(result);
         }
@@ -39,6 +41,13 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchForPaymentAsync([FromQuery] SearchQueryRequestDto searchRequestDto)
+        {
+            var result = await sender.Send(new SearchPaymentQuery(searchRequestDto));
+            if (!result.IsSuccessful) return NotFound(result);
+            return Ok(result);
+        }
 
         [HttpGet("{referenceNo}")]
         public async Task<IActionResult> GetPaymentByReferenceNoAsync([FromRoute] string referenceNo)

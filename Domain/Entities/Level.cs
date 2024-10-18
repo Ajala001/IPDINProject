@@ -1,6 +1,6 @@
 ﻿namespace App.Core.Entities
 {
-    public class RegistrationType : Auditables
+    public class Level : Auditables
     {
         public required string Name { get; set; }
         public required int Dues { get; set; }

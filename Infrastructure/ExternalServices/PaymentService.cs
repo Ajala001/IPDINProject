@@ -1,9 +1,11 @@
 ﻿using App.Application.IExternalServices;
 using App.Core.DTOs.Requests.CreateRequestDtos;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
+using App.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -88,16 +90,68 @@ namespace App.Infrastructure.ExternalServices
             };
         }
 
-        public async Task<Core.DTOs.Responses.ApiResponse<IEnumerable<PaymentResponseDto>>> GetPaymentsAsync()
+        public async Task<PagedResponse<IEnumerable<PaymentResponseDto>>> GetPaymentsAsync(int pageSize, int pageNumber)
         {
             var payments = await _paymentRepository.GetPaymentsAsync();
-            if (!payments.Any()) return new Core.DTOs.Responses.ApiResponse<IEnumerable<PaymentResponseDto>>
+            if (payments == null || !payments.Any())
             {
-                IsSuccessful = false,
-                Message = "No Payment Received",
-            };
+                return new PagedResponse<IEnumerable<PaymentResponseDto>>
+                {
+                    IsSuccessful = false,
+                    Message = "Payments Not Found",
+                    Data = null
+                };
+            }
 
-            var responseData = payments.Select(payment => new PaymentResponseDto
+            // If pageSize and pageNumber are not provided (null or 0), return all courses without pagination
+            if (pageSize == 0 || pageNumber == 0)
+            {
+                var responseData = payments.Select(payment => new PaymentResponseDto
+                {
+                    Id = payment.Id,
+                    PayerFullName = $"{payment.User.FirstName} {payment.User.LastName}",
+                    Amount = payment.Amount,
+                    PaymentRef = payment.PaymentRef,
+                    PaymentFor = payment.ReasonForPayment,
+                    CreatedAt = payment.CreatedOn,
+                    Status = payment.Status
+                }).ToList();
+
+                return new PagedResponse<IEnumerable<PaymentResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "Payments Retrieved Successfully",
+                    TotalRecords = payments.Count(),
+                    Data = responseData
+                };
+            }
+
+
+            var totalRecords = payments.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<PaymentResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more payments available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<PaymentResponseDto>()
+                };
+            }
+
+            // Paginate the payments
+            var paginatedPayments = payments
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedResponseData = paginatedPayments.Select(payment => new PaymentResponseDto
             {
                 Id = payment.Id,
                 PayerFullName = $"{payment.User.FirstName} {payment.User.LastName}",
@@ -108,11 +162,15 @@ namespace App.Infrastructure.ExternalServices
                 Status = payment.Status
             }).ToList();
 
-            return new Core.DTOs.Responses.ApiResponse<IEnumerable<PaymentResponseDto>>
+            return new PagedResponse<IEnumerable<PaymentResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Payments Retrieved Successfully",
-                Data = responseData
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = paginatedResponseData
             };
         }
 
@@ -120,14 +178,21 @@ namespace App.Infrastructure.ExternalServices
         {
             var loginUser = _contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var user = await _userManager.FindByEmailAsync(loginUser!);
+            if (HasPendingApplication(user, requestDto.EntityId!.Value)) return new Core.DTOs.Responses.ApiResponse<string>
+            {
+                IsSuccessful = false,
+                Message = "You already have a pending application, hence you cannot apply for this at the moment"
+            };
+
             var response = await GetFeeAndEntityNameAsync(requestDto.ReasonForPayment, requestDto.EntityId.GetValueOrDefault(), user);
+            var transactionReference = Guid.NewGuid().ToString();
             TransactionInitializeRequest request = new TransactionInitializeRequest()
             {
                 AmountInKobo = response.fee * 100, //to get the kobo value of the amount
                 Email = user!.Email,
-                Reference = Guid.NewGuid().ToString(),
+                Reference = transactionReference,
                 Currency = "NGN",
-                CallbackUrl = "https://localhost:7237/payment/verify"
+                CallbackUrl = $"{_configuration["AngularUrl"]}/payments/verify?applicationId={requestDto.EntityId.GetValueOrDefault()}&reason={requestDto.ReasonForPayment}&reference={transactionReference}"
             };
 
             TransactionInitializeResponse payStackResponse = PayStack.Transactions.Initialize(request);
@@ -152,11 +217,11 @@ namespace App.Infrastructure.ExternalServices
                     Message = payStackResponse.Message,
                     Data = payStackResponse.Data.AuthorizationUrl
                 };
-                    
+
             }
             return new Core.DTOs.Responses.ApiResponse<string>
             {
-                IsSuccessful = true,
+                IsSuccessful = false,
                 Message = payStackResponse.Message
             };
         }
@@ -208,7 +273,7 @@ namespace App.Infrastructure.ExternalServices
                 fee = training.Fee;
                 entityName = training.Title;
             }
-            else if (paymentReason == "Exam")
+            else if (paymentReason == "Examination")
             {
                 var exam = await _examinationRepository.GetExaminationAsync(e => e.Id == entityId)
                     ?? throw new Exception("Exam not found");
@@ -217,9 +282,9 @@ namespace App.Infrastructure.ExternalServices
             }
             else if (paymentReason == "Dues")
             {
-                var userRegistrationType = user.RegistrationType ?? throw new Exception("User is not registered");
-                fee = userRegistrationType.Dues;
-                entityName = userRegistrationType.Name;
+                var userLevel = user.Level ?? throw new Exception("User is not registered");
+                fee = userLevel.Dues;
+                entityName = userLevel.Name;
             }
             return (fee, entityName);
         }
@@ -227,53 +292,114 @@ namespace App.Infrastructure.ExternalServices
         public async Task<Core.DTOs.Responses.ApiResponse<string>> VerifyPaymentAsync(string referenceNo)
         {
             TransactionVerifyResponse response = PayStack.Transactions.Verify(referenceNo);
-            if (response.Data == null)
+            if (response.Data == null) return new Core.DTOs.Responses.ApiResponse<string>
             {
-                return new Core.DTOs.Responses.ApiResponse<string>
-                {
-                    IsSuccessful = false,
-                    Message = "Payment verification failed: No response data."
-                };
-            }
+                IsSuccessful = false,
+                Message = "Payment verification failed: No response data."
+            };
 
             var payment = await _paymentRepository.GetPaymentAsync(p => p.PaymentRef == referenceNo);
+            if (payment == null) return new Core.DTOs.Responses.ApiResponse<string>
+            {
+                IsSuccessful = false,
+                Message = "Payment not found for the provided reference number."
+            };
+
             if (response.Data.Status == "success")
             {
-                if (payment != null)
-                {
-                    payment.Status = Core.Enums.PaymentStatus.Successful;
-                    _paymentRepository.Update(payment);
-                    await _unitOfWork.SaveAsync();
+                payment.Status = Core.Enums.PaymentStatus.Successful;
+                _paymentRepository.Update(payment);
+                await _unitOfWork.SaveAsync();
 
-                    return new Core.DTOs.Responses.ApiResponse<string>
-                    {
-                        IsSuccessful = true,
-                        Message = response.Message // Success message from Paystack
-                    };
-                }
+                return new Core.DTOs.Responses.ApiResponse<string>
+                {
+                    IsSuccessful = true,
+                    Message = response.Message // Success message from Paystack
+                };
             }
             else if (response.Data.Status == "failed")
             {
-                if (payment != null)
-                {
-                    payment.Status = Core.Enums.PaymentStatus.Failed;
-                    _paymentRepository.Update(payment);
-                    await _unitOfWork.SaveAsync();
+                payment.Status = Core.Enums.PaymentStatus.Failed;
+                _paymentRepository.Update(payment);
+                await _unitOfWork.SaveAsync();
 
-                    return new Core.DTOs.Responses.ApiResponse<string>
-                    {
-                        IsSuccessful = false,
-                        Message = response.Message // Failure message from Paystack
-                    };
-                }
+                return new Core.DTOs.Responses.ApiResponse<string>
+                {
+                    IsSuccessful = false,
+                    Message = response.Message // Failure message from Paystack
+                };
             }
 
-            // If payment is not found
+            // Handle other cases such as "pending" or unexpected status
             return new Core.DTOs.Responses.ApiResponse<string>
             {
                 IsSuccessful = false,
-                Message = "Payment not found."
+                Message = $"Payment verification returned unexpected status: {response.Data.Status}."
             };
+        }
+
+        public async Task<PagedResponse<IEnumerable<PaymentResponseDto>>> SearchPaymentAsync(SearchQueryRequestDto request)
+        {
+            var payments = await _paymentRepository.GetPaymentsAsync();
+            var searchedPayments = payments.Where(payment =>
+                                !string.IsNullOrEmpty(request.SearchQuery) &&
+                                (payment.User.FirstName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || payment.User.LastName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || payment.ReasonForPayment.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || payment.PaymentRef.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                                || payment.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                                || (decimal.TryParse(request.SearchQuery, out decimal amount) && payment.Amount == amount)
+                            ).ToList();
+
+
+            if (!searchedPayments.Any()) return new PagedResponse<IEnumerable<PaymentResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "No Match Found",
+                Data = null
+            };
+
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+
+            var totalRecords = searchedPayments.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+
+            var paginatedPayments = searchedPayments
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+            var responseData = paginatedPayments.Select(payment => new PaymentResponseDto
+            {
+                Id = payment.Id,
+                PayerFullName = $"{payment.User.FirstName} {payment.User.LastName}",
+                Amount = payment.Amount,
+                PaymentRef = payment.PaymentRef,
+                PaymentFor = payment.ReasonForPayment,
+                CreatedAt = payment.CreatedOn,
+                Status = payment.Status
+            }).ToList();
+
+            return new PagedResponse<IEnumerable<PaymentResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Payments Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = responseData
+            };
+        }
+
+        private bool HasPendingApplication(User user, Guid entityId)
+        {
+            return user.Applications
+                .Any(application =>
+                    application.ApplicationId == entityId &&
+                    application.Status == Core.Enums.ApplicationStatus.Pending);
         }
     }
 }

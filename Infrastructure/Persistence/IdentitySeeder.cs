@@ -45,10 +45,10 @@ namespace App.Infrastructure.Persistence
             }
 
             // Seed RegistrationType
-            RegistrationType registrationType = null;
-            if (!await dbContext.RegistrationTypes.AnyAsync(rt => rt.Name == "Fellow"))
+            Level level = null;
+            if (!await dbContext.Levels.AnyAsync(rt => rt.Name == "Fellow"))
             {
-                registrationType = new RegistrationType
+                level = new Level
                 {
                     Id = Guid.NewGuid(),
                     Name = "Fellow",
@@ -57,7 +57,7 @@ namespace App.Infrastructure.Persistence
                     CreatedOn = DateTime.Now
                 };
 
-                await dbContext.RegistrationTypes.AddAsync(registrationType);
+                await dbContext.Levels.AddAsync(level);
                 await dbContext.SaveChangesAsync();
             }
 
@@ -82,7 +82,7 @@ namespace App.Infrastructure.Persistence
                     ExpiringDate = DateTime.Now,
                     YearsOfExperience = 5,
                     NameOfCurrentDrivingSchool = "IPDIN",
-                    RegistrationTypeId = registrationType!.Id,
+                    LevelId = level!.Id,
                     CreatedOn = DateTime.Now,
                     CreatedBy = "Admin"
                 };

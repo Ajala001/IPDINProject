@@ -24,7 +24,7 @@ namespace App.Application
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITrainingService, TrainingService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IRegistrationTypeService, RegistrationTypeService>();
+            services.AddScoped<ILevelService, LevelService>();
             services.AddScoped<IApplicationSlip, ApplicationSlip>();
 
             services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));

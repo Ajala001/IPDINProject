@@ -4,14 +4,14 @@ using MediatR;
 
 namespace App.Application.Queries.Payment
 {
-    public record GetAllPaymentQuery() : IRequest<ApiResponse<IEnumerable<PaymentResponseDto>>>;
+    public record GetAllPaymentQuery(int PageSize, int PageNumber) : IRequest<PagedResponse<IEnumerable<PaymentResponseDto>>>;
 
     public class GetAllPaymentQueryHandler(IPaymentService paymentService)
-        : IRequestHandler<GetAllPaymentQuery, ApiResponse<IEnumerable<PaymentResponseDto>>>
+        : IRequestHandler<GetAllPaymentQuery, PagedResponse<IEnumerable<PaymentResponseDto>>>
     {
-        public async Task<ApiResponse<IEnumerable<PaymentResponseDto>>> Handle(GetAllPaymentQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResponse<IEnumerable<PaymentResponseDto>>> Handle(GetAllPaymentQuery request, CancellationToken cancellationToken)
         {
-            return await paymentService.GetPaymentsAsync();
+            return await paymentService.GetPaymentsAsync(request.PageSize, request.PageNumber);
         }
     }
 }

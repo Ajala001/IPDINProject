@@ -7,7 +7,7 @@ namespace App.Core.DTOs.Responses
         public Guid Id { get; set; }
         public string Title { get; set; } = null!;
         public string Description { get; set; } = string.Empty;
-        public required decimal Fee { get; set; }
+        public required string Fee { get; set; }
         public DateTime StartingDateAndTime { get; set; }
         public DateTime EndingDateAndTime { get; set; }
         public DateTime RegistrationDeadline { get; set; }

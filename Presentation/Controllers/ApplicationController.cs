@@ -1,14 +1,14 @@
 ﻿using App.Application.Commands.AppApplication;
 using App.Application.Queries.AppApplication;
 using App.Core.DTOs.Requests.CreateRequestDtos;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    [Authorize(Policy = "PaidDuesOnly", Roles = "Admin, Member")]
+    //[Authorize(Policy = "PaidDuesOnly", Roles = "Admin, Member")]
     [Route("api/applications")]
     [ApiController]
     public class ApplicationController(ISender sender) : ControllerBase
@@ -23,10 +23,19 @@ namespace App.Presentation.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> GetAllApplicationAsync()
+        public async Task<IActionResult> GetAllApplicationAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
         {
-            var result = await sender.Send(new GetAllAppApplicationsQuery());
+            var result = await sender.Send(new GetAllAppApplicationsQuery(pageSize, pageNumber));
             if (!result.IsSuccessful) return NotFound(new { error = result.Message });
+            return Ok(result);
+        }
+
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchForApplicationAsync([FromQuery] SearchQueryRequestDto searchRequestDto)
+        {
+            var result = await sender.Send(new SearchAppApplicationQuery(searchRequestDto));
+            if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }
 

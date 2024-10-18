@@ -33,7 +33,7 @@ namespace App.Presentation.Controllers
 
         [Authorize(Roles = "Admin, Member")]
         [HttpGet("search")]
-        public async Task<IActionResult> SearchForCourseAsync([FromQuery] CourseSearchRequestDto searchRequestDto)
+        public async Task<IActionResult> SearchForCourseAsync([FromQuery] SearchQueryRequestDto searchRequestDto)
         {
             var result = await sender.Send(new SearchCourseQuery(searchRequestDto));
             if (!result.IsSuccessful) return NotFound(result);

@@ -1,4 +1,4 @@
-﻿using App.Core.Entities;
+﻿using App.Core.Enums;
 
 namespace App.Core.DTOs.Requests.CreateRequestDtos
 {
@@ -8,6 +8,7 @@ namespace App.Core.DTOs.Requests.CreateRequestDtos
         public DateTime ExamDateAndTime { get; set; }
         public short ExamYear { get; set; }
         public required int Fee { get; set; }
+        public ExaminationStatus Status { get; set; }
         public ICollection<Guid> Courses { get; set; } = new List<Guid>();
 
     }

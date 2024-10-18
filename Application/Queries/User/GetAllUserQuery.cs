@@ -1,22 +1,17 @@
 ﻿using App.Core.DTOs.Responses;
 using App.Core.Interfaces.Services;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace App.Application.Queries.User
 {
-    public record GetAllUserQuery() : IRequest<ApiResponse<IEnumerable<UserResponseDto>>>;
+    public record GetAllUserQuery(int PageSize, int PageNumber) : IRequest<PagedResponse<IEnumerable<UserResponseDto>>>;
 
     public class GetAllUserQueryHandler(IUserService userService)
-        : IRequestHandler<GetAllUserQuery, ApiResponse<IEnumerable<UserResponseDto>>>
+        : IRequestHandler<GetAllUserQuery, PagedResponse<IEnumerable<UserResponseDto>>>
     {
-        public async Task<ApiResponse<IEnumerable<UserResponseDto>>> Handle(GetAllUserQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResponse<IEnumerable<UserResponseDto>>> Handle(GetAllUserQuery request, CancellationToken cancellationToken)
         {
-            return await userService.GetUsersAsync();
+            return await userService.GetUsersAsync(request.PageSize, request.PageNumber);
         }
     }
 }

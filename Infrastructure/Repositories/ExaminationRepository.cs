@@ -19,11 +19,16 @@ namespace App.Infrastructure.Repositories
             dbContext.Examinations.Remove(examination);
         }
 
-        public async Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate)
+        public async Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate, bool includeCourses = false)
         {
-            var result = await dbContext.Examinations.Include(a => a.Courses)
-                                                .FirstOrDefaultAsync(predicate);
-            return result;
+            var result = dbContext.Examinations.AsQueryable();
+
+            if (includeCourses)
+            {
+                result = result.Include(e => e.Courses); // Eagerly load courses
+            }
+
+            return await result.FirstOrDefaultAsync(predicate);
         }
 
         public async Task<IEnumerable<Examination>> GetExaminationsAsync()

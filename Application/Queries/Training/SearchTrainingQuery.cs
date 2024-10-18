@@ -5,13 +5,13 @@ using MediatR;
 
 namespace App.Application.Queries.Training
 {
-    public record SearchTrainingQuery(TrainingSearchRequestDto SearchRequestDto) 
-        : IRequest<ApiResponse<IEnumerable<TrainingResponseDto>>>;
+    public record SearchTrainingQuery(SearchQueryRequestDto SearchRequestDto) 
+        : IRequest<PagedResponse<IEnumerable<TrainingResponseDto>>>;
 
     public class SearchTrainingQueryHandler(ITrainingService trainingService)
-        : IRequestHandler<SearchTrainingQuery, ApiResponse<IEnumerable<TrainingResponseDto>>>
+        : IRequestHandler<SearchTrainingQuery, PagedResponse<IEnumerable<TrainingResponseDto>>>
     {
-        public async Task<ApiResponse<IEnumerable<TrainingResponseDto>>> Handle(SearchTrainingQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResponse<IEnumerable<TrainingResponseDto>>> Handle(SearchTrainingQuery request, CancellationToken cancellationToken)
         {
             return await trainingService.SearchTrainingAsync(request.SearchRequestDto);
         }

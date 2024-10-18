@@ -15,6 +15,4 @@ namespace App.Application.Commands.Course
             return await courseService.CreateAsync(request.Course);
         }
     }
-
-
 }

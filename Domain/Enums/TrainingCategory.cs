@@ -3,6 +3,8 @@
     public enum TrainingCategory
     {
         Technician = 1,
-        Affliate
+        Affliate,
+        Fellow,
+        Honorary
     }
 }

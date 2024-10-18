@@ -84,6 +84,7 @@ namespace App.Infrastructure.Migrations
                     ExamDateAndTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     ExamYear = table.Column<short>(type: "smallint", nullable: false),
                     Fee = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedBy = table.Column<string>(type: "longtext", nullable: false),
                     ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
@@ -96,7 +97,7 @@ namespace App.Infrastructure.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "RegistrationTypes",
+                name: "Levels",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
@@ -109,7 +110,7 @@ namespace App.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RegistrationTypes", x => x.Id);
+                    table.PrimaryKey("PK_Levels", x => x.Id);
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
 
@@ -191,7 +192,7 @@ namespace App.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    RegistrationTypeId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    LevelId = table.Column<Guid>(type: "char(36)", nullable: false),
                     LastName = table.Column<string>(type: "longtext", nullable: false),
                     FirstName = table.Column<string>(type: "longtext", nullable: false),
                     MembershipNumber = table.Column<string>(type: "longtext", nullable: true),
@@ -234,9 +235,9 @@ namespace App.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AspNetUsers_RegistrationTypes_RegistrationTypeId",
-                        column: x => x.RegistrationTypeId,
-                        principalTable: "RegistrationTypes",
+                        name: "FK_AspNetUsers_Levels_LevelId",
+                        column: x => x.LevelId,
+                        principalTable: "Levels",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 })
@@ -247,9 +248,8 @@ namespace App.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    ApplicationId = table.Column<Guid>(type: "char(36)", nullable: false),
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: true),
-                    TrainingId = table.Column<Guid>(type: "char(36)", nullable: true),
                     ApplicationPurpose = table.Column<string>(type: "longtext", nullable: true),
                     Date = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -559,9 +559,9 @@ namespace App.Infrastructure.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AspNetUsers_RegistrationTypeId",
+                name: "IX_AspNetUsers_LevelId",
                 table: "AspNetUsers",
-                column: "RegistrationTypeId");
+                column: "LevelId");
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
@@ -672,7 +672,7 @@ namespace App.Infrastructure.Migrations
                 name: "Trainings");
 
             migrationBuilder.DropTable(
-                name: "RegistrationTypes");
+                name: "Levels");
         }
     }
 }

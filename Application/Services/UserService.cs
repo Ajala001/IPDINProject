@@ -1,4 +1,5 @@
-﻿using App.Core.DTOs.Requests.UpdateRequestDtos;
+﻿using App.Core.DTOs.Requests.SearchRequestDtos;
+using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
@@ -58,23 +59,71 @@ namespace App.Application.Services
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<UserResponseDto>>> GetUsersAsync()
+        public async Task<PagedResponse<IEnumerable<UserResponseDto>>> GetUsersAsync(int pageSize, int pageNumber)
         {
             var users = await userManager.Users.ToListAsync()
                 ?? throw new Exception("No User Found");
 
-            var userResponseDtos = new List<UserResponseDto>();
-            foreach (var user in users)
+            var responseData = new List<UserResponseDto>();
+            // If pageSize and pageNumber are not provided (null or 0), return all courses without pagination
+            if (pageSize == 0 || pageNumber == 0)
             {
-                var roles = await userManager.GetRolesAsync(user);
-                userResponseDtos.Add(UserResponseDto(user, roles));
+                foreach (var user in users)
+                {
+                    var roles = await userManager.GetRolesAsync(user);
+                    responseData.Add(UserResponseDto(user, roles));
+                }
+
+                return new PagedResponse<IEnumerable<UserResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "Users Retrieved Successfully",
+                    TotalRecords = users.Count(),
+                    Data = responseData
+                };
             }
 
-            return new ApiResponse<IEnumerable<UserResponseDto>>
+
+            var totalRecords = users.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<UserResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more user available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<UserResponseDto>()
+                };
+            }
+
+            // Paginate the users
+            var paginatedUsers = users
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedResponseData = new List<UserResponseDto>();
+            foreach (var user in paginatedUsers)
+            {
+                var roles = await userManager.GetRolesAsync(user);
+                paginatedResponseData.Add(UserResponseDto(user, roles));
+            }
+
+            return new PagedResponse<IEnumerable<UserResponseDto>>
             {
                 IsSuccessful = true,
-                Message = "Users retrieved successfully",
-                Data = userResponseDtos
+                Message = "Users Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = paginatedResponseData
             };
         }
 
@@ -137,7 +186,9 @@ namespace App.Application.Services
                 FullName = $"{user.FirstName} {user.LastName}",
                 RoleNames = roles.ToList(),
                 MembershipNumber = user.MembershipNumber ?? string.Empty,
+                Email = user.Email ?? string.Empty,
                 Gender = user.Gender,
+                Level = user.Level,
                 DateOfBirth = user.DateOfBirth,
                 ProfilePic = user.ProfilePic ?? string.Empty,
                 Address = $"{user.StreetNo?.ToString() ?? string.Empty}, {user.StreetName} {user.City} {user.StateOfResidence}, {user.Country}",
@@ -153,6 +204,66 @@ namespace App.Application.Services
                     Degree = u.Qualification.Degree ?? string.Empty,
                     FieldOfStudy = u.Qualification.FieldOfStudy ?? string.Empty
                 }).ToList()
+            };
+        }
+
+        public async Task<PagedResponse<IEnumerable<UserResponseDto>>> SearchUserAsync(SearchQueryRequestDto request)
+        {
+            var users = await userManager.Users.ToListAsync();
+            var searchedUsers = users.Where(user =>
+                !string.IsNullOrEmpty(request.SearchQuery) &&
+                (
+                    user.FirstName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    user.LastName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||  
+                    user.MembershipNumber != null && user.MembershipNumber.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                    user.StateOfResidence.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                    (user.City != null && user.City.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) || 
+                    (user.LocalGovt != null && user.LocalGovt.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) || 
+                    (user.StateOfOrigin != null && user.StateOfOrigin.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)) || 
+                    user.Country.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    user.DriverLicenseNo.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    user.Gender.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    user.Level.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                )
+            ).ToList();
+
+
+            if (!searchedUsers.Any()) return new PagedResponse<IEnumerable<UserResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "No Match Found",
+                Data = null
+            };
+
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+
+            var totalRecords = searchedUsers.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+
+            var paginatedUsers = searchedUsers
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+
+            var paginatedResponseData = new List<UserResponseDto>();
+            foreach (var user in paginatedUsers)
+            {
+                var roles = await userManager.GetRolesAsync(user);
+                paginatedResponseData.Add(UserResponseDto(user, roles));
+            }
+
+            return new PagedResponse<IEnumerable<UserResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Users Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = paginatedResponseData
             };
         }
     }

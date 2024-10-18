@@ -8,7 +8,7 @@ namespace App.Application.HtmlFormat
         public async Task<string> HtmlContent(AppApplication appApplication)
         {
             var fullName = $"{appApplication.User.FirstName} {appApplication.User.LastName}";
-            var examination = await examinationService.GetExaminationAsync(appApplication.ExaminationId ?? Guid.Empty);
+            var examination = await examinationService.GetExaminationAsync(appApplication.ApplicationId);
 
             string courseRows = "";
             if (examination?.Data.Courses != null)

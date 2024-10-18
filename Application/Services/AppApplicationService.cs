@@ -1,5 +1,6 @@
 ﻿using App.Application.HtmlFormat;
 using App.Core.DTOs.Requests.CreateRequestDtos;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
@@ -10,6 +11,7 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace App.Application.Services
@@ -20,32 +22,33 @@ namespace App.Application.Services
         : IAppApplicationService
     {
         public async Task<ApiResponse<AppApplicationResponseDto>> CreateAsync(CreateAppApplicationRequestDto request)
-        {
+       {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var user = await userManager.FindByEmailAsync(loginUser!);
+
             var appApplication = new AppApplication
             {
                 Id = Guid.NewGuid(),
                 UserId = user!.Id,
                 User = user,
-                ExaminationId = request.ExaminationId,
-                Status = Core.Enums.ApplicationStatus.Pending,
+                Status = ApplicationStatus.Pending,
                 Date = DateTime.Now,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
             };
-            if(request.TrainingId != null)
+
+            if (request.ApplicationType == "Training")
             {
-                appApplication.TrainingId = request.TrainingId;
-                var training = await trainingRepository.GetTrainingAsync(tr => tr.Id == request.TrainingId);
-                appApplication.ApplicationPurpose = training.Title;
-            } else
-                appApplication.ExaminationId = request.ExaminationId;
-                var examination = await examinationRepository.GetExaminationAsync(e => e.Id == request.ExaminationId);
-                appApplication.ApplicationPurpose = examination.ExamTitle;
+                await HandleTrainingApplicationAsync(request.ApplicationId, appApplication);
+            }
+            else if (request.ApplicationType == "Examination")
+            {
+                await HandleExaminationApplicationAsync(request.ApplicationId, appApplication);
+            }
 
             await applicationRepository.CreateAsync(appApplication);
             await unitOfWork.SaveAsync();
+
             return new ApiResponse<AppApplicationResponseDto>
             {
                 IsSuccessful = true,
@@ -59,6 +62,22 @@ namespace App.Application.Services
                     Status = appApplication.Status
                 }
             };
+        }
+
+        private async Task HandleTrainingApplicationAsync(Guid applicationId, AppApplication appApplication)
+        {
+            var training = await trainingRepository.GetTrainingAsync(tr => tr.Id == applicationId) 
+                        ?? throw new InvalidOperationException("Training not found");
+            appApplication.ApplicationId = applicationId;
+            appApplication.ApplicationPurpose = training.Title;
+        }
+
+        private async Task HandleExaminationApplicationAsync(Guid applicationId, AppApplication appApplication)
+        {
+            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == applicationId) 
+                            ?? throw new InvalidOperationException("Examination not found");
+            appApplication.ApplicationId = applicationId;
+            appApplication.ApplicationPurpose = examination.ExamTitle;
         }
 
         public async Task<ApiResponse<AppApplicationResponseDto>> DeleteAsync(Guid id)
@@ -107,35 +126,86 @@ namespace App.Application.Services
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<AppApplicationResponseDto>>> GetAppApplicationsAsync()
+        public async Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> GetAppApplicationsAsync(int pageSize, int pageNumber)
         {
-            var applications = await applicationRepository.GetApplicationsAsync();
-            if (!applications.Any()) return new ApiResponse<IEnumerable<AppApplicationResponseDto>>
+            var applications = await applicationRepository.GetApplicationsAsync().ToListAsync();
+            if (!applications.Any())
             {
-                IsSuccessful = false,
-                Message = "Applications Not Found",
-                Data = null
-            };
+                return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
+                {
+                    IsSuccessful = false,
+                    Message = "Applications Not Found",
+                    Data = null
+                };
+            }
 
-            var responseData = applications.Select(application =>
+            // If pageSize and pageNumber are not provided (null or 0), return all courses without pagination
+            if (pageSize == 0 || pageNumber == 0)
             {
-                return new AppApplicationResponseDto
+                var responseData = applications.Select(application => new AppApplicationResponseDto
                 {
                     Id = application.Id,
                     ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
                     ApplicationPurpose = application.ApplicationPurpose,
                     Date = application.Date,
                     Status = application.Status
+                }).ToList();
+
+                return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "Applications Retrieved Successfully",
+                    TotalRecords = applications.Count(),
+                    Data = responseData
                 };
+            }
+
+
+            var totalRecords = applications.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more applications available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<AppApplicationResponseDto>()
+                };
+            }
+
+            // Paginate the applications
+            var paginatedApplications = applications
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedResponseData = paginatedApplications.Select(application => new AppApplicationResponseDto
+            {
+                Id = application.Id,
+                ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
+                ApplicationPurpose = application.ApplicationPurpose,
+                Date = application.Date,
+                Status = application.Status
             }).ToList();
 
-            return new ApiResponse<IEnumerable<AppApplicationResponseDto>>
+            return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Applications Retrieved Successfully",
-                Data = responseData
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = paginatedResponseData
             };
         }
+
 
         public async Task<ApiResponse<AppApplicationResponseDto>> UpdateAsync(Guid id, UpdateAppApplicationRequestDto request)
         {
@@ -239,5 +309,63 @@ namespace App.Application.Services
                 Data = request.RejectionReason
             };
         }
+
+        public async Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> SearchApplicationAsync(SearchQueryRequestDto request)
+        {
+            var applications = applicationRepository.GetApplicationsAsync();
+            var searchedApplications = await applications
+                                    .Where(application =>
+                                        !string.IsNullOrEmpty(request.SearchQuery) &&
+                                        (
+                                            application.User.FirstName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                            application.User.LastName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                            application.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                            (application.ApplicationPurpose != null && application.ApplicationPurpose.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                                        )
+                                    )
+                                    .ToListAsync();
+
+
+
+            if (!searchedApplications.Any()) return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "No Match Found",
+                Data = null
+            };
+
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+
+            var totalRecords = searchedApplications.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+
+            var paginatedTrainings = searchedApplications
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+            var responseData = paginatedTrainings.Select(application => new AppApplicationResponseDto
+            {
+                Id = application.Id,
+                ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
+                ApplicationPurpose = application.ApplicationPurpose,
+                Date = application.Date,
+                Status = application.Status
+            }).ToList();
+
+            return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Applications Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = responseData
+            };
+        }
+
     }
 }

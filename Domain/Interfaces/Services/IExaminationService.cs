@@ -12,6 +12,6 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<ExaminationResponseDto>> DeleteAsync(Guid id);
         Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> GetExaminationsAsync(int pageSize, int pageNumber);
         Task<ApiResponse<ExaminationResponseDto>> GetExaminationAsync(Guid id);
-        Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(ExaminationSearchRequestDto request);
+        Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(SearchQueryRequestDto request);
     }
 }

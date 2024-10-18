@@ -10,7 +10,7 @@ namespace App.Core.Interfaces.Repositories
         void Delete(Examination examination);
         Task<IEnumerable<Examination>> GetExaminationsAsync();
         Task<IEnumerable<Examination>> SearchExaminationAsync(string courseTitle, string courseCode);
-        Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate);
+        Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate, bool includeCourses = false);
         Task<ICollection<Examination>> GetSelectedAsync(Expression<Func<Examination, bool>> predicate);
     }
 }

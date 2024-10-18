@@ -43,7 +43,7 @@ namespace App.Infrastructure.ExternalServices
                 ExpiringDate = request.ExpiringDate,
                 YearsOfExperience = request.YearsOfExperience,
                 NameOfCurrentDrivingSchool = request.NameOfCurrentDrivingSchool,
-                RegistrationTypeId = request.RegistrationTypeId,
+                LevelId = request.LevelId,
                 CreatedBy = request.Email,
                 CreatedOn = DateTime.Now,
             };
@@ -228,7 +228,8 @@ namespace App.Infrastructure.ExternalServices
                 new Claim("Surname", user.LastName),
                 new Claim("GivenName", user.FirstName),
                 new Claim("NameIdentifier", user.UserName),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim("Level", user.Level.ToString())
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

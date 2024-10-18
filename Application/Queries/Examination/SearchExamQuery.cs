@@ -5,7 +5,7 @@ using MediatR;
 
 namespace App.Application.Queries.Examination
 {
-    public record SearchExamQuery(ExaminationSearchRequestDto SearchRequestDto) 
+    public record SearchExamQuery(SearchQueryRequestDto SearchRequestDto) 
         : IRequest<PagedResponse<IEnumerable<ExaminationResponseDto>>>;
 
     public class SearchExamQueryHandler(IExaminationService examinationService)

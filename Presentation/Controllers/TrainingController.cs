@@ -24,16 +24,16 @@ namespace App.Presentation.Controllers
 
         [Authorize(Roles = "Admin, Member")]
         [HttpGet]
-        public async Task<IActionResult> GetAllTrainingAsync()
+        public async Task<IActionResult> GetAllTrainingAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
         {
-            var result = await sender.Send(new GetAllTrainingQuery());
+            var result = await sender.Send(new GetAllTrainingQuery(pageSize, pageNumber));
             if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }
 
         [Authorize(Roles = "Admin, Member")]
         [HttpGet("search")]
-        public async Task<IActionResult> SearchForTrainingAsync([FromQuery] TrainingSearchRequestDto searchRequestDto)
+        public async Task<IActionResult> SearchForTrainingAsync([FromQuery] SearchQueryRequestDto searchRequestDto)
         {
             var result = await sender.Send(new SearchTrainingQuery(searchRequestDto));
             if (!result.IsSuccessful) return NotFound(result);

@@ -9,7 +9,7 @@ namespace App.Core.Interfaces.Repositories
         AppApplication Update(AppApplication application);
         void Delete(AppApplication application);
         void DeleteAll(List<AppApplication> applications);
-        Task<IEnumerable<AppApplication>> GetApplicationsAsync();
+        IQueryable<AppApplication> GetApplicationsAsync();
         Task<AppApplication> GetApplicationAsync(Expression<Func<AppApplication, bool>> predicate);
 
 

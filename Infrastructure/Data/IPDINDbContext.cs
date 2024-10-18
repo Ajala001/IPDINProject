@@ -17,7 +17,7 @@ namespace App.Infrastructure.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Result> Results { get; set; }
         public DbSet<Training> Trainings { get; set; }
-        public DbSet<RegistrationType> RegistrationTypes { get; set; }
+        public DbSet<Level> Levels { get; set; }
         public DbSet<AcademicQualification> AcademicQualifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -62,9 +62,9 @@ namespace App.Infrastructure.Data
                 .HasForeignKey(p => p.UserId);
 
             builder.Entity<User>()
-            .HasOne(u => u.RegistrationType)  // Each User has one RegistrationType
+            .HasOne(u => u.Level)  // Each User has one RegistrationType
             .WithMany(rt => rt.Users)         // Each RegistrationType has many Users
-            .HasForeignKey(u => u.RegistrationTypeId)  // Foreign key in User table
+            .HasForeignKey(u => u.LevelId)  // Foreign key in User table
             .OnDelete(DeleteBehavior.Restrict);
 
 
@@ -74,6 +74,7 @@ namespace App.Infrastructure.Data
                 .HasMany(e => e.Courses)
                 .WithMany(c => c.Examinations)
                 .UsingEntity(j => j.ToTable("ExamCourses")); // This defines the join table
+
 
             // User and Course
             builder.Entity<UserCourses>()

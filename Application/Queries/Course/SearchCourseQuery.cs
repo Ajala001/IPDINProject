@@ -5,7 +5,7 @@ using MediatR;
 
 namespace App.Application.Queries.Course
 {
-    public record SearchCourseQuery(CourseSearchRequestDto SearchRequestDto) 
+    public record SearchCourseQuery(SearchQueryRequestDto SearchRequestDto) 
         : IRequest<PagedResponse<IEnumerable<CourseResponseDto>>>;
 
     public class SearchCourseQueryHandler(ICourseService courseService)
