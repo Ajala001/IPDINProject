@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace App.Infrastructure.Migrations
 {
     [DbContext(typeof(IPDINDbContext))]
-    [Migration("20241018064827_initial")]
-    partial class initial
+    [Migration("20241108055421_resultsuploaded")]
+    partial class resultsuploaded
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -100,6 +100,39 @@ namespace App.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Applications");
+                });
+
+            modelBuilder.Entity("App.Core.Entities.BatchResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("ExaminationId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("NumberOfUploadedResults")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExaminationId")
+                        .IsUnique();
+
+                    b.ToTable("BatchResults");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Course", b =>
@@ -261,6 +294,9 @@ namespace App.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Breakdown")
                         .IsRequired()
                         .HasColumnType("json");
@@ -272,7 +308,7 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("ExaminationId")
+                    b.Property<Guid?>("ExaminationId")
                         .HasColumnType("char(36)");
 
                     b.Property<string>("ModifiedBy")
@@ -281,16 +317,17 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("TotalScore")
-                        .HasColumnType("int");
+                    b.Property<double>("TotalScore")
+                        .HasColumnType("double");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExaminationId")
-                        .IsUnique();
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("ExaminationId");
 
                     b.HasIndex("UserId");
 
@@ -738,6 +775,17 @@ namespace App.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("App.Core.Entities.BatchResult", b =>
+                {
+                    b.HasOne("App.Core.Entities.Examination", "Examination")
+                        .WithOne("BatchResult")
+                        .HasForeignKey("App.Core.Entities.BatchResult", "ExaminationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Examination");
+                });
+
             modelBuilder.Entity("App.Core.Entities.Payment", b =>
                 {
                     b.HasOne("App.Core.Entities.User", "User")
@@ -751,11 +799,15 @@ namespace App.Infrastructure.Migrations
 
             modelBuilder.Entity("App.Core.Entities.Result", b =>
                 {
-                    b.HasOne("App.Core.Entities.Examination", "Examination")
-                        .WithOne("Result")
-                        .HasForeignKey("App.Core.Entities.Result", "ExaminationId")
+                    b.HasOne("App.Core.Entities.BatchResult", "BatchResult")
+                        .WithMany("Results")
+                        .HasForeignKey("BatchId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("App.Core.Entities.Examination", null)
+                        .WithMany("Results")
+                        .HasForeignKey("ExaminationId");
 
                     b.HasOne("App.Core.Entities.User", "User")
                         .WithMany("Results")
@@ -763,7 +815,7 @@ namespace App.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Examination");
+                    b.Navigation("BatchResult");
 
                     b.Navigation("User");
                 });
@@ -926,6 +978,11 @@ namespace App.Infrastructure.Migrations
                     b.Navigation("UserAcademicQualifications");
                 });
 
+            modelBuilder.Entity("App.Core.Entities.BatchResult", b =>
+                {
+                    b.Navigation("Results");
+                });
+
             modelBuilder.Entity("App.Core.Entities.Course", b =>
                 {
                     b.Navigation("Courses");
@@ -933,9 +990,12 @@ namespace App.Infrastructure.Migrations
 
             modelBuilder.Entity("App.Core.Entities.Examination", b =>
                 {
+                    b.Navigation("BatchResult")
+                        .IsRequired();
+
                     b.Navigation("Examinations");
 
-                    b.Navigation("Result");
+                    b.Navigation("Results");
                 });
 
             modelBuilder.Entity("App.Core.Entities.Level", b =>

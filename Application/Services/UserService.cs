@@ -12,7 +12,7 @@ using System.Security.Claims;
 namespace App.Application.Services
 {
     public class UserService(UserManager<User> userManager, IFileRepository fileRepository,
-        IHttpContextAccessor httpContextAccessor) : IUserService
+        IHttpContextAccessor httpContextAccessor, ILevelRepository levelRepository) : IUserService
     {
         public async Task<ApiResponse<UserResponseDto>> DeleteAsync(string email)
         {
@@ -43,7 +43,12 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<UserResponseDto>> GetUserAsync(string email)
         {
-            var user = await userManager.FindByEmailAsync(email);
+            var user = await userManager.Users
+                    .Include(u => u.UserAcademicQualifications)
+                    .ThenInclude(uaq => uaq.Qualification)
+                    .Include(u => u.Level) // Assuming there's a navigation property for Level
+                    .FirstOrDefaultAsync(u => u.Email == email);
+
             if (user == null) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = false,
@@ -55,7 +60,7 @@ namespace App.Application.Services
             {
                 IsSuccessful = true,
                 Message = "User retrieved successfully",
-                Data = UserResponseDto(user, await userManager.GetRolesAsync(user))
+                Data = await UserResponseDto(user, await userManager.GetRolesAsync(user))
             };
         }
 
@@ -71,7 +76,7 @@ namespace App.Application.Services
                 foreach (var user in users)
                 {
                     var roles = await userManager.GetRolesAsync(user);
-                    responseData.Add(UserResponseDto(user, roles));
+                    responseData.Add(await UserResponseDto(user, roles));
                 }
 
                 return new PagedResponse<IEnumerable<UserResponseDto>>
@@ -112,7 +117,7 @@ namespace App.Application.Services
             foreach (var user in paginatedUsers)
             {
                 var roles = await userManager.GetRolesAsync(user);
-                paginatedResponseData.Add(UserResponseDto(user, roles));
+                paginatedResponseData.Add(await UserResponseDto(user, roles));
             }
 
             return new PagedResponse<IEnumerable<UserResponseDto>>
@@ -140,7 +145,7 @@ namespace App.Application.Services
 
             if (request.ProfilePic != null)
             {
-                var imageUpload = await fileRepository.UploadAsync(request.ProfilePic);
+                var imageUpload = await fileRepository.UploadAsync(request.ProfilePic, httpContextAccessor.HttpContext.Request);
                 if (imageUpload != null)
                 {
                     user.ProfilePic = imageUpload;
@@ -172,14 +177,15 @@ namespace App.Application.Services
             {
                 IsSuccessful = true,
                 Message = "User updated successfully",
-                Data = UserResponseDto(user, await userManager.GetRolesAsync(user))
+                Data = await UserResponseDto(user, await userManager.GetRolesAsync(user))
             };
         }
 
 
 
-        private static UserResponseDto UserResponseDto(User user, IList<string> roles)
+        private async Task<UserResponseDto> UserResponseDto(User user, IList<string> roles)
         {
+            var userLevel = await levelRepository.GetLevelAsync(l => l.Id == user.LevelId);
             return new UserResponseDto
             {
                 Id = user.Id,
@@ -188,7 +194,7 @@ namespace App.Application.Services
                 MembershipNumber = user.MembershipNumber ?? string.Empty,
                 Email = user.Email ?? string.Empty,
                 Gender = user.Gender,
-                Level = user.Level,
+                Level = userLevel.Name,
                 DateOfBirth = user.DateOfBirth,
                 ProfilePic = user.ProfilePic ?? string.Empty,
                 Address = $"{user.StreetNo?.ToString() ?? string.Empty}, {user.StreetName} {user.City} {user.StateOfResidence}, {user.Country}",
@@ -252,7 +258,7 @@ namespace App.Application.Services
             foreach (var user in paginatedUsers)
             {
                 var roles = await userManager.GetRolesAsync(user);
-                paginatedResponseData.Add(UserResponseDto(user, roles));
+                paginatedResponseData.Add(await UserResponseDto(user, roles));
             }
 
             return new PagedResponse<IEnumerable<UserResponseDto>>

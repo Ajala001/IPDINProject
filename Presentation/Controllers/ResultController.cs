@@ -1,5 +1,6 @@
 ﻿using App.Application.Commands.Result;
 using App.Application.Queries.Result;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -12,30 +13,32 @@ namespace App.Presentation.Controllers
     public class ResultController(ISender sender) : ControllerBase
     {
         [Authorize(Roles = "Admin")]
-        [HttpGet]
-        public async Task<IActionResult> GetAllResultAsync()
+        [HttpGet("/{membershipNumber}")]
+        public async Task<IActionResult> GetAllResultAsync([FromRoute] string membershipNumber)
         {
-            var result = await sender.Send(new GetAllResultQuery());
+            var result = await sender.Send(new GetAllResultQuery(membershipNumber));
             if (result.IsSuccessful) return Ok(result);
             return BadRequest(result);
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPost("uploadResult")]
-        public async Task<ActionResult> UploadResultAsync(IFormFile file)
-        {
-            var result = await sender.Send(new UploadResultCommand(file));
-            if(result.IsSuccessful) return Ok(result);
-            return BadRequest(result);  
-        }
 
         [Authorize(Roles = "Admin, Member")]
-        [HttpGet("{membershipNumber}")]
-        public async Task<IActionResult> GetResultAsync([FromRoute] string membershipNumber)
+        [HttpGet("{resultId}")]
+        public async Task<IActionResult> GetResultAsync([FromRoute] Guid resultId)
         {
-            var result = await sender.Send(new GetResultByMembershipNoQuery(membershipNumber));
+            var result = await sender.Send(new GetResultByIdQuery(resultId));
             if (result.IsSuccessful) return Ok(result);
             return BadRequest(result);
+        }
+
+
+        [Authorize(Roles = "Admin, Member")]
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchForResultAsync([FromQuery] SearchQueryRequestDto searchRequestDto)
+        {
+            var result = await sender.Send(new SearchResultQuery(searchRequestDto));
+            if (!result.IsSuccessful) return NotFound(result);
+            return Ok(result);
         }
 
         [Authorize(Roles = "Admin")]

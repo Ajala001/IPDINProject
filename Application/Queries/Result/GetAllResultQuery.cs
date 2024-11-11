@@ -4,14 +4,14 @@ using MediatR;
 
 namespace App.Application.Queries.Result
 {
-    public record GetAllResultQuery() : IRequest<ApiResponse<IEnumerable<ResultResponseDto>>>;
+    public record GetAllResultQuery(string MembershipNumber) : IRequest<ApiResponse<IEnumerable<StudentResultResponseDto>>>;
 
-    public class GetAllResultQueryHandler(IResultService resultService)
-        : IRequestHandler<GetAllResultQuery, ApiResponse<IEnumerable<ResultResponseDto>>>
+    public class GetAllResultsQueryHandler(IResultService resultService)
+        : IRequestHandler<GetAllResultQuery, ApiResponse<IEnumerable<StudentResultResponseDto>>>
     {
-        public async Task<ApiResponse<IEnumerable<ResultResponseDto>>> Handle(GetAllResultQuery request, CancellationToken cancellationToken)
+        public async Task<ApiResponse<IEnumerable<StudentResultResponseDto>>> Handle(GetAllResultQuery request, CancellationToken cancellationToken)
         {
-            return await resultService.GetResultsAsync();
+            return await resultService.GetResultsAsync(request.MembershipNumber);
         }
     }
 }

@@ -2,7 +2,6 @@
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
-using App.Core.Entities;
 
 namespace App.Core.Interfaces.Services
 {
@@ -12,6 +11,7 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<AppApplicationResponseDto>> UpdateAsync(Guid id, UpdateAppApplicationRequestDto request);
         Task<ApiResponse<AppApplicationResponseDto>> DeleteAsync(Guid id);
         Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> GetAppApplicationsAsync(int pageSize, int pageNumber);
+        Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> GetUserAppApplicationsAsync(int pageSize, int pageNumber);
         Task<ApiResponse<AppApplicationResponseDto>> GetAppApplicationAsync(Guid id);
         Task<ApiResponse<AppApplicationResponseDto>> AcceptApplicationAsync(Guid id);
         Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> SearchApplicationAsync(SearchQueryRequestDto request);

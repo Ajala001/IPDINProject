@@ -7,7 +7,7 @@ using MySql.EntityFrameworkCore.Metadata;
 namespace App.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class batchresult : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -157,6 +157,29 @@ namespace App.Infrastructure.Migrations
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "BatchResults",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "longtext", nullable: false),
+                    ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "longtext", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BatchResults", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BatchResults_Examinations_ExaminationId",
+                        column: x => x.ExaminationId,
+                        principalTable: "Examinations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -392,9 +415,10 @@ namespace App.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: false),
-                    TotalScore = table.Column<int>(type: "int", nullable: false),
+                    BatchId = table.Column<Guid>(type: "char(36)", nullable: false),
+                    TotalScore = table.Column<double>(type: "double", nullable: false),
                     Breakdown = table.Column<string>(type: "json", nullable: false),
+                    ExaminationId = table.Column<Guid>(type: "char(36)", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedBy = table.Column<string>(type: "longtext", nullable: false),
                     ModifiedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
@@ -410,11 +434,16 @@ namespace App.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_Results_BatchResults_BatchId",
+                        column: x => x.BatchId,
+                        principalTable: "BatchResults",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_Results_Examinations_ExaminationId",
                         column: x => x.ExaminationId,
                         principalTable: "Examinations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
 
@@ -570,6 +599,12 @@ namespace App.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_BatchResults_ExaminationId",
+                table: "BatchResults",
+                column: "ExaminationId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ExamCourses_ExaminationsId",
                 table: "ExamCourses",
                 column: "ExaminationsId");
@@ -580,10 +615,14 @@ namespace App.Infrastructure.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Results_BatchId",
+                table: "Results",
+                column: "BatchId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Results_ExaminationId",
                 table: "Results",
-                column: "ExaminationId",
-                unique: true);
+                column: "ExaminationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Results_UserId",
@@ -657,19 +696,22 @@ namespace App.Infrastructure.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "BatchResults");
+
+            migrationBuilder.DropTable(
                 name: "AcademicQualifications");
 
             migrationBuilder.DropTable(
                 name: "Courses");
 
             migrationBuilder.DropTable(
-                name: "Examinations");
-
-            migrationBuilder.DropTable(
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Trainings");
+
+            migrationBuilder.DropTable(
+                name: "Examinations");
 
             migrationBuilder.DropTable(
                 name: "Levels");

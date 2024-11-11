@@ -30,7 +30,7 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Member")]
         [HttpGet("{email}")]
         public async Task<IActionResult> GetUserByEmailAsync([FromRoute] string email)
         {

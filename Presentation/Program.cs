@@ -4,18 +4,6 @@ using App.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
-
-
-// Configure Kestrel to listen on all network interfaces
-//builder.WebHost.ConfigureKestrel(options =>
-//{
-//    options.ListenAnyIP(5067); // HTTP port
-//    options.ListenAnyIP(7237, listenOptions =>
-//    {
-//        listenOptions.UseHttps(); // HTTPS port
-//    });
-//});
-
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -26,15 +14,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddPresentation(configuration);
 
-
-
-
-
-
-
-
 var app = builder.Build();
 
+app.UseStaticFiles();
 app.UseCors("AllowSpecificOrigin");
 
 // Configure the HTTP request pipeline.

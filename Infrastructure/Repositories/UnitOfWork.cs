@@ -1,5 +1,6 @@
 ﻿using App.Core.Interfaces.Repositories;
 using App.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace App.Infrastructure.Repositories
 {
@@ -13,6 +14,11 @@ namespace App.Infrastructure.Repositories
         public async Task<int> SaveAsync(CancellationToken stoppingToken)
         {
             return await dbContext.SaveChangesAsync(stoppingToken);
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await dbContext.Database.BeginTransactionAsync();
         }
     }
 }

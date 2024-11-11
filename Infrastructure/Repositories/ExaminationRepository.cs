@@ -54,12 +54,21 @@ namespace App.Infrastructure.Repositories
             return examination; 
         }
 
-        public async Task<ICollection<Examination>> GetSelectedAsync(Expression<Func<Examination, bool>> predicate)
+        public async Task<IEnumerable<Examination>> GetSelectedAsync(Expression<Func<Examination, bool>> predicate)
         {
             var response = await dbContext.Examinations
                             .Include(e => e.Courses)
                             .Where(predicate).ToListAsync();
             return response;
+        }
+
+        public async Task<IEnumerable<Examination>> GetExaminationsAsync(User user)
+        {
+
+            return await dbContext.Examinations
+                    .Include(e => e.Examinations) // Include the junction table
+                    .Where(e => e.Examinations.Any(ue => ue.UserId == user.Id)) // Filter by user ID
+                    .ToListAsync();
         }
     }
 }

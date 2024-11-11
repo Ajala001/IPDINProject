@@ -6,7 +6,7 @@ namespace App.Infrastructure.Repositories
 {
     public class FileRepository(IAppEnvironment appEnvironment) : IFileRepository
     {
-        public async Task<string> UploadAsync(IFormFile file)
+        public async Task<string> UploadAsync(IFormFile file, HttpRequest request)
         {
             if (file != null && file.Length > 0)
             {
@@ -27,11 +27,11 @@ namespace App.Infrastructure.Repositories
                     {
                         await file.CopyToAsync(fileStream);
                     }
-                    return $"/uploads/{newFileName}";
+                    var relativePath = $"/uploads/{newFileName}";
+                    return $"{request.Scheme}://{request.Host}/{relativePath}";
                 }
                 catch (Exception ex)
                 {
-                    // Log the exception (ex) here
                     return null;
                 }
             }

@@ -8,11 +8,7 @@ namespace App.Infrastructure.Repositories
 {
     public class ResultRepository(IPDINDbContext dbContext) : IResultRepository
     {
-        public async Task<IEnumerable<Result>> UploadResultAsync(List<Result> results)
-        {
-            await dbContext.Results.AddRangeAsync(results);
-            return results;  
-        }
+       
 
         public void Delete(Result result)
         {
@@ -26,8 +22,11 @@ namespace App.Infrastructure.Repositories
 
         public async Task<IEnumerable<Result>> GetResultsAsync()
         {
-            var result = await dbContext.Results.Include(r => r.Examination)
-                                                 .ToListAsync();
+            var result = await dbContext.Results
+                         .Include(r => r.User)
+                        .Include(r => r.BatchResult)
+                        .ThenInclude(br => br.Examination)
+                        .ToListAsync();
             return result;
         }
 
@@ -35,6 +34,21 @@ namespace App.Infrastructure.Repositories
         {
             dbContext.Results.Update(result);
             return result;
+        }
+
+        public async Task<IEnumerable<Result>> GetResultsAsync(User user)
+        {
+            return await dbContext.Results
+                                .Include(r => r.User)
+                                .Include(r => r.BatchResult)
+                                .ThenInclude(br => br.Examination)
+                                .Where(r => r.UserId == user.Id)
+                                .ToListAsync();
+        }
+
+        public Task<IEnumerable<Result>> UploadResultAsync(List<Result> results)
+        {
+            throw new NotImplementedException();
         }
     }
 }

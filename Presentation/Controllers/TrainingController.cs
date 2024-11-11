@@ -31,6 +31,14 @@ namespace App.Presentation.Controllers
             return Ok(result);
         }
 
+        [HttpGet("user")]
+        public async Task<IActionResult> GetUserTrainingsAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
+        {
+            var result = await sender.Send(new GetUserTrainingsQuery(pageSize, pageNumber));
+            if (!result.IsSuccessful) return NotFound(result);
+            return Ok(result);
+        }
+
         [Authorize(Roles = "Admin, Member")]
         [HttpGet("search")]
         public async Task<IActionResult> SearchForTrainingAsync([FromQuery] SearchQueryRequestDto searchRequestDto)

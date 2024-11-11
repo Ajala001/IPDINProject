@@ -1,26 +1,24 @@
-﻿using App.Core.DTOs.Requests.UpdateRequestDtos;
+﻿using App.Core.DTOs.Requests.SearchRequestDtos;
+using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
-using OfficeOpenXml;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace App.Application.Services
 {
     public class ResultService(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor,
-        IExaminationRepository examinationRepository, IResultRepository resultRepository, 
-        IUnitOfWork unitOfWork, ILogger<ResultService> logger) : IResultService
+        IResultRepository resultRepository, IUnitOfWork unitOfWork) : IResultService
     {
         
-        public async Task<ApiResponse<ResultResponseDto>> DeleteAsync(string membershipNumber)
+        public async Task<ApiResponse<StudentResultResponseDto>> DeleteAsync(string membershipNumber)
         {
             var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber);
-            if (result == null) return new ApiResponse<ResultResponseDto>
+            if (result == null) return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Result not found",
@@ -30,7 +28,7 @@ namespace App.Application.Services
             resultRepository.Delete(result);
             await unitOfWork.SaveAsync();
 
-            return new ApiResponse<ResultResponseDto>
+            return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = true,
                 Message = "Result deleted successfully",
@@ -38,65 +36,80 @@ namespace App.Application.Services
             };
         }
 
-        public async Task<ApiResponse<ResultResponseDto>> GetResultAsync(string membershipNumber)
+        public async Task<ApiResponse<StudentResultResponseDto>> GetResultAsync(Guid resultId)
         {
-            var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber);
-            if (result == null) return new ApiResponse<ResultResponseDto>
+            var result = await resultRepository.GetResultAsync(r => r.Id == resultId);
+            if (result == null) return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Result not found",
                 Data = null
             };
 
-            return new ApiResponse<ResultResponseDto>
+            return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = true,
                 Message = "Result retrieved successfully",
-                Data = new ResultResponseDto
+                Data = new StudentResultResponseDto
                 {
                     Id = result.Id,
                     FullName = $"{result.User.FirstName} {result.User.LastName}",
-                    ExamTitle = result.Examination.ExamTitle,
+                    ExamTitle = result.BatchResult.Examination.ExamTitle,
                     TotalScore = result.TotalScore,
                     Breakdown = result.Breakdown
                 }
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<ResultResponseDto>>> GetResultsAsync()
+        public async Task<ApiResponse<IEnumerable<StudentResultResponseDto>>> GetResultsAsync(string membershipNumber)
         {
-            var results = await resultRepository.GetResultsAsync();
-            if (!results.Any()) return new ApiResponse<IEnumerable<ResultResponseDto>>
+            var user = await userManager.Users
+                        .Where(u => u.MembershipNumber == membershipNumber)
+                        .FirstOrDefaultAsync();
+
+            if (user == null) return new ApiResponse<IEnumerable<StudentResultResponseDto>>
             {
                 IsSuccessful = false,
-                Message = "Results not found",
+                Message = "User not found",
                 Data = null
             };
 
-            var responseData = results.Select(result => new ResultResponseDto
+            // Fetch the results associated with the user
+            var results = await resultRepository.GetResultsAsync(user);
+            if (results == null || !results.Any()) return new ApiResponse<IEnumerable<StudentResultResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "No results found for the user",
+                Data = null
+            };
+
+            // Map results to DTO
+            var resultDtos = results.Select(result => new StudentResultResponseDto
             {
                 Id = result.Id,
                 FullName = $"{result.User.FirstName} {result.User.LastName}",
-                ExamTitle = result.Examination.ExamTitle,
+                ExamTitle = result.BatchResult.Examination.ExamTitle,
                 TotalScore = result.TotalScore,
                 Breakdown = result.Breakdown
-            });
+            }).ToList();
 
-            return new ApiResponse<IEnumerable<ResultResponseDto>>
+            // Return the successful response
+            return new ApiResponse<IEnumerable<StudentResultResponseDto>>
             {
                 IsSuccessful = true,
                 Message = "Results retrieved successfully",
-                Data = responseData
+                Data = resultDtos
             };
         }
 
-        public async Task<ApiResponse<ResultResponseDto>> UpdateAsync(string membershipNumber, UpdateResultRequestDto request)
+
+        public async Task<ApiResponse<StudentResultResponseDto>> UpdateAsync(string membershipNumber, UpdateResultRequestDto request)
         {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber
-                            && r.ExaminationId == request.ExaminationId);
+                            && r.BatchResult.ExaminationId == request.ExaminationId);
 
-            if(result == null) return new ApiResponse<ResultResponseDto>
+            if(result == null) return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Result not found",
@@ -111,136 +124,72 @@ namespace App.Application.Services
             resultRepository.Update(result);
             await unitOfWork.SaveAsync();
 
-            return new ApiResponse<ResultResponseDto>
+            return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = true,
                 Message = "Result updated successfully",
-                Data = new ResultResponseDto
+                Data = new StudentResultResponseDto
                 {
                     Id = result.Id,
                     FullName = $"{result.User.FirstName} {result.User.LastName}",
-                    ExamTitle = result.Examination.ExamTitle,
+                    ExamTitle = result.BatchResult.Examination.ExamTitle,
                     TotalScore = result.TotalScore,
                     Breakdown = result.Breakdown
                 }
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<ResultResponseDto>>> UploadResultAsync(IFormFile file)
+
+        public async Task<PagedResponse<IEnumerable<StudentResultResponseDto>>> SearchResultAsync(SearchQueryRequestDto request)
         {
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            var results = await resultRepository.GetResultsAsync();
+            var searchResults = results
+                                .Where(result => string.IsNullOrEmpty(request.SearchQuery) ||
+                                    result.BatchResult.ExaminationId.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                    result.TotalScore.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                    result.User.FirstName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                    result.User.LastName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                                .ToList();
 
-            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            logger.LogInformation("UploadResultAsync started by {LoginUser}", loginUser);
-
-            if (file == null || file.Length == 0)
+            if (!searchResults.Any()) return new PagedResponse<IEnumerable<StudentResultResponseDto>>
             {
-                logger.LogWarning("File not provided or empty by {LoginUser}", loginUser);
-                return new ApiResponse<IEnumerable<ResultResponseDto>>
-                {
-                    IsSuccessful = false,
-                    Message = "File not provided or empty",
-                    Data = null
-                };
-            }
+                IsSuccessful = false,
+                Message = "No Match Found",
+                Data = null
+            };
 
-            var results = new List<Result>();
-            var resultsDto = new List<ResultResponseDto>();
+            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
+            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
 
-            using (var stream = new MemoryStream())
+            var totalRecords = searchResults.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+
+            var paginatedResults = searchResults
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+            var responseData = paginatedResults.Select(result => new StudentResultResponseDto
             {
-                await file.CopyToAsync(stream);
-                using (var package = new ExcelPackage(stream))
-                {
-                    var worksheet = package.Workbook.Worksheets[0]; // Assume the first worksheet
-                    for (int row = 2; row <= worksheet.Dimension.Rows; row++)
-                    {
-                        if (string.IsNullOrWhiteSpace(worksheet.Cells[row, 1].Text))
-                        {
-                            logger.LogInformation("Empty row encountered at row {RowNumber}, stopping processing.", row);
-                            break;
-                        }
+                Id = result.Id,
+                FullName = $"{result.User.FirstName} {result.User.LastName}",
+                ExamTitle = result.BatchResult.Examination.ExamTitle,
+                TotalScore = result.TotalScore,
+                Breakdown = result.Breakdown
+            }).ToList();
 
-                        var email = worksheet.Cells[row, 1].Text;
-                        var examTitle = worksheet.Cells[row, 2].Text;
-                        var totalScore = int.Parse(worksheet.Cells[row, 3].Text);
-                        var breakdownJson = worksheet.Cells[row, 4].Text;
-
-                        var user = await userManager.FindByEmailAsync(email);
-                        if (user == null)
-                        {
-                            logger.LogWarning("User not found for email {Email} at row {RowNumber}", email, row);
-                            continue;
-                        }
-
-                        var examination = await examinationRepository.GetExaminationAsync(e => e.ExamTitle == examTitle);
-                        if (examination == null)
-                        {
-                            logger.LogWarning("Examination not found for title {ExamTitle} at row {RowNumber}", examTitle, row);
-                            continue;
-                        }
-
-                        if (!IsValidJson(breakdownJson))
-                        {
-                            logger.LogWarning("Invalid JSON format in breakdown at row {RowNumber}", row);
-                            continue;
-                        }
-
-                        var result = new Result
-                        {
-                            Id = Guid.NewGuid(),
-                            UserId = user.Id,
-                            ExaminationId = examination.Id,
-                            TotalScore = totalScore,
-                            Breakdown = breakdownJson,
-                            User = user,
-                            Examination = examination,
-                            CreatedOn = DateTime.Now,
-                            CreatedBy = loginUser!
-                        };
-                        var fullName = $"{user.FirstName} {user.LastName}";
-                        results.Add(result);
-                        logger.LogInformation("Result added for user {fullName} and examination {ExamTitle}", fullName, examination.ExamTitle);
-
-                        resultsDto.Add(new ResultResponseDto
-                        {
-                            Id = result.Id,
-                            FullName = fullName,
-                            ExamTitle = result.Examination.ExamTitle,
-                            TotalScore = result.TotalScore,
-                            Breakdown = result.Breakdown
-                        });
-                    }
-                }
-            }
-
-            await resultRepository.UploadResultAsync(results);
-            await unitOfWork.SaveAsync();
-
-            logger.LogInformation("Results uploaded successfully by {LoginUser}", loginUser);
-
-            return new ApiResponse<IEnumerable<ResultResponseDto>>
+            return new PagedResponse<IEnumerable<StudentResultResponseDto>>
             {
                 IsSuccessful = true,
-                Message = "Results Uploaded Successfully",
-                Data = resultsDto
+                Message = "Results Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = responseData
             };
         }
 
-        private bool IsValidJson(string jsonString)
-        {
-            try
-            {
-                JsonDocument.Parse(jsonString);
-                return true;
-            }
-            catch (JsonException ex)
-            {
-                logger.LogWarning(ex, "Invalid JSON encountered.");
-                return false;
-            }
-        }
     }
 }
-

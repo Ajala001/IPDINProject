@@ -27,7 +27,7 @@ namespace App.Application.Services
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
             };
-
+            await qualificationRepository.CreateAsync(academicQualification);
             var user = await userManager.FindByEmailAsync(loginUser!);
             var userAcademicQualification = new UserAcademicQualifications
             {
@@ -38,7 +38,6 @@ namespace App.Application.Services
             };
 
             academicQualification.UserAcademicQualifications.Add(userAcademicQualification);
-            await qualificationRepository.CreateAsync(academicQualification);
             await unitOfWork.SaveAsync();
 
             return new ApiResponse<AcademicQualificationResponseDto>

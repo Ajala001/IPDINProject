@@ -30,6 +30,14 @@ namespace App.Infrastructure.Repositories
             return await dbContext.Payments.Include(p => p.User).ToListAsync();
         }
 
+        public async Task<IEnumerable<Payment>> GetPaymentsAsync(User user)
+        {
+            return await dbContext.Payments
+                        .Include(p => p.User)
+                        .Where(p => p.UserId == user.Id)    
+                        .ToListAsync();
+        }
+
         public Payment Update(Payment payment)
         {
             dbContext.Payments.Update(payment);

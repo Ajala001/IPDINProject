@@ -10,7 +10,7 @@ namespace App.Core.DTOs.Responses
         public List<string>? RoleNames { get; set; }
         public string? MembershipNumber { get; set; }
         public string Email { get; set; } = null!;
-        public required Level Level { get; set; }
+        public required string Level { get; set; }
         public required Gender Gender { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public string? ProfilePic { get; set; }

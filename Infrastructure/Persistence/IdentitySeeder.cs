@@ -72,6 +72,7 @@ namespace App.Infrastructure.Persistence
                     LastName = "Ajala",
                     UserName = "admin@example.com",
                     Email = "admin@example.com",
+                    LevelId = level!.Id,
                     EmailConfirmed = true,
                     Gender = Core.Enums.Gender.Male,
                     DateOfBirth = DateTime.Now,
@@ -82,7 +83,8 @@ namespace App.Infrastructure.Persistence
                     ExpiringDate = DateTime.Now,
                     YearsOfExperience = 5,
                     NameOfCurrentDrivingSchool = "IPDIN",
-                    LevelId = level!.Id,
+                    Level = level,
+                    MembershipNumber = "ADM/2024/0001",
                     CreatedOn = DateTime.Now,
                     CreatedBy = "Admin"
                 };

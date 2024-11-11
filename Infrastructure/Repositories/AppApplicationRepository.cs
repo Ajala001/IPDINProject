@@ -34,6 +34,12 @@ namespace App.Infrastructure.Repositories
             return dbContext.Applications.AsQueryable();
         }
 
+        public IQueryable<AppApplication> GetApplicationsAsync(User user)
+        {
+            return dbContext.Applications
+            .Where(app => app.UserId == user.Id);
+        }
+
         public AppApplication Update(AppApplication application)
         {
             dbContext.Applications.Update(application);

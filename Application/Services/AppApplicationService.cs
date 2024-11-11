@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using PaperKind = DinkToPdf.PaperKind;
 
 namespace App.Application.Services
 {
@@ -159,51 +160,8 @@ namespace App.Application.Services
                     Data = responseData
                 };
             }
-
-
-            var totalRecords = applications.Count();
-            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
-
-            // If pageNumber exceeds total pages, return an empty response
-            if (pageNumber > totalPages)
-            {
-                return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
-                {
-                    IsSuccessful = true,
-                    Message = "No more applications available",
-                    TotalRecords = totalRecords,
-                    TotalPages = totalPages,
-                    PageSize = pageSize,
-                    CurrentPage = pageNumber,
-                    Data = new List<AppApplicationResponseDto>()
-                };
-            }
-
-            // Paginate the applications
-            var paginatedApplications = applications
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            var paginatedResponseData = paginatedApplications.Select(application => new AppApplicationResponseDto
-            {
-                Id = application.Id,
-                ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
-                ApplicationPurpose = application.ApplicationPurpose,
-                Date = application.Date,
-                Status = application.Status
-            }).ToList();
-
-            return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
-            {
-                IsSuccessful = true,
-                Message = "Applications Retrieved Successfully",
-                TotalRecords = totalRecords,
-                TotalPages = totalPages,
-                PageSize = pageSize,
-                CurrentPage = pageNumber,
-                Data = paginatedResponseData
-            };
+            var response = PaginatedResponse(pageSize, pageNumber, applications);
+            return response;
         }
 
 
@@ -325,8 +283,6 @@ namespace App.Application.Services
                                     )
                                     .ToListAsync();
 
-
-
             if (!searchedApplications.Any()) return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
             {
                 IsSuccessful = false,
@@ -334,19 +290,41 @@ namespace App.Application.Services
                 Data = null
             };
 
-            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
-            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+            var response = PaginatedResponse(request.PageSize, request.PageNumber, searchedApplications);
+            return response;
+        }
 
-            var totalRecords = searchedApplications.Count();
-            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+        public async Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> GetUserAppApplicationsAsync(int pageSize, int pageNumber)
+        {
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var user = await userManager.FindByEmailAsync(loginUser!);
+            var userApplications = applicationRepository.GetApplicationsAsync(user);
+            if (!userApplications.Any()) return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "You have no applications",
+                Data = null
+            };
+
+            var response = PaginatedResponse(pageSize, pageNumber, userApplications.ToList());
+            return response;
+        }
 
 
-            var paginatedTrainings = searchedApplications
+        private static PagedResponse<IEnumerable<AppApplicationResponseDto>> PaginatedResponse(int requestpageSize, int requestPageNumber, List<AppApplication> applications)
+        {
+            int pageSize = requestpageSize > 0 ? requestpageSize : 5;
+            int pageNumber = requestPageNumber > 0 ? requestPageNumber : 1;
+
+            var totalRecords = applications.Count;
+            var totalPages = (int)Math.Ceiling((double)totalRecords / requestpageSize);
+
+            var paginatedData = applications
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
 
-            var responseData = paginatedTrainings.Select(application => new AppApplicationResponseDto
+            var responseData = paginatedData.Select(application => new AppApplicationResponseDto
             {
                 Id = application.Id,
                 ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
@@ -366,6 +344,5 @@ namespace App.Application.Services
                 Data = responseData
             };
         }
-
     }
 }

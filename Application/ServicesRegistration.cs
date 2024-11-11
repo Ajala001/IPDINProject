@@ -19,6 +19,7 @@ namespace App.Application
             services.AddScoped<IAcademicQualificationService, AcademicQualificationService>();
             services.AddScoped<IAppApplicationService, AppApplicationService>();
             services.AddScoped<ICourseService, CourseService>();
+            services.AddScoped<IBatchResultService, BatchResultService>();
             services.AddScoped<IExaminationService, ExaminationService>();
             services.AddScoped<IResultService, ResultService>();
             services.AddScoped<IRoleService, RoleService>();

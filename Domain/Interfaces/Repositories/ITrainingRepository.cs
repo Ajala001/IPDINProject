@@ -10,6 +10,7 @@ namespace App.Core.Interfaces.Repositories
         void Delete(Training training);
          IQueryable<Training> Query();
         Task<IEnumerable<Training>> GetTrainingsAsync();
+        Task<IEnumerable<Training>> GetTrainingsAsync(User user);
         Task<IEnumerable<Training>> SearchTrainingAsync(string trainingTitle);
         Task<Training> GetTrainingAsync(Expression<Func<Training, bool>> predicate);
     }

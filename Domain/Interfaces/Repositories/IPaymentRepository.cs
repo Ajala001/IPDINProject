@@ -9,6 +9,7 @@ namespace App.Core.Interfaces.Repositories
         void Delete(Payment payment);
         Payment Update(Payment payment);
         Task<IEnumerable<Payment>> GetPaymentsAsync();
+        Task<IEnumerable<Payment>> GetPaymentsAsync(User user);
         Task<Payment> GetPaymentAsync(Expression<Func<Payment, bool>> predicate);
     }
 }

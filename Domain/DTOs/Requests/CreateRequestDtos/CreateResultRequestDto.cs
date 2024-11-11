@@ -6,7 +6,7 @@ namespace App.Core.DTOs.Requests.CreateRequestDtos
     {
         public required Guid UserId { get; set; }
         public required Guid ExaminationId { get; set; }
-        public required int TotalScore { get; set; }
+        public required double TotalScore { get; set; }
         [Column(TypeName = "json")]
         public required string Breakdown { get; set; }
     }

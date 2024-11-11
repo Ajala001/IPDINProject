@@ -29,6 +29,14 @@ namespace App.Infrastructure.Repositories
             return await dbContext.Trainings.Include(t => t.Trainings).ToListAsync();
         }
 
+        public async Task<IEnumerable<Training>> GetTrainingsAsync(User user)
+        {
+            return await dbContext.Trainings
+                         .Include(t => t.Trainings)
+                         .Where(t => t.Trainings.Any(ue => ue.UserId == user.Id))
+                         .ToListAsync();
+        }
+
         public IQueryable<Training> Query()
         {
             return dbContext.Trainings.AsQueryable();

@@ -6,12 +6,13 @@ using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace App.Application.Services
 {
     public class ExaminationService(IHttpContextAccessor httpContextAccessor, ICourseRepository courseRepository,
-        IUnitOfWork unitOfWork, IExaminationRepository examinationRepository)
+        IUnitOfWork unitOfWork, IExaminationRepository examinationRepository, UserManager<User> userManager)
         : IExaminationService
     {
         public async Task<ApiResponse<ExaminationResponseDto>> CreateAsync(CreateExaminationRequestDto request)
@@ -137,10 +138,6 @@ namespace App.Application.Services
         public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> GetExaminationsAsync(int pageSize, int pageNumber)
         {
             var examinations = await examinationRepository.GetExaminationsAsync();
-
-            pageSize = pageSize > 0 ? pageSize : 5;
-            pageNumber = pageNumber > 0 ? pageNumber : 1;
-
             if (examinations == null || !examinations.Any()) return new PagedResponse<IEnumerable<ExaminationResponseDto>>
             {
                 IsSuccessful = false,
@@ -148,60 +145,8 @@ namespace App.Application.Services
                 Data = null
             };
 
-            var totalRecords = examinations.Count();
-            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
-
-            // If pageNumber exceeds total pages, return an empty response
-            if (pageNumber > totalPages)
-            {
-                return new PagedResponse<IEnumerable<ExaminationResponseDto>>
-                {
-                    IsSuccessful = true,
-                    Message = "No more examinations available",
-                    TotalRecords = totalRecords,
-                    TotalPages = totalPages,
-                    PageSize = pageSize,
-                    CurrentPage = pageNumber,
-                    Data = new List<ExaminationResponseDto>()
-                };
-            }
-
-            // Paginate the examinations
-            var paginatedExams = examinations
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            var paginatedResponseData = paginatedExams.Select(examination => new ExaminationResponseDto
-            {
-                Id = examination.Id,
-                ExamTitle = examination.ExamTitle,
-                ExamDate = examination.ExamDateAndTime.ToString("D"),
-                ExamTime = examination.ExamDateAndTime.ToString("t"),
-                ExamYear = examination.ExamYear,
-                Status = examination.Status,
-                Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
-                Courses = examination.Courses.Select(c => new CourseResponseDto
-                {
-                    Id = c.Id,
-                    CourseTitle = c.CourseTitle,
-                    CourseCode = c.CourseCode,
-                    CourseUnit = c.CourseUnit,
-                    Status = c.Status
-                }).ToList()
-            }).ToList();
-
-
-            return new PagedResponse<IEnumerable<ExaminationResponseDto>>
-            {
-                IsSuccessful = true,
-                Message = "Examinations Retrieved Successfuly",
-                TotalRecords = totalRecords,
-                TotalPages = totalPages,
-                PageSize = pageSize,
-                CurrentPage = pageNumber,
-                Data = paginatedResponseData
-            };
+            var response = PaginatedResponse(pageSize, pageNumber, examinations.ToList());
+            return response;
         }
 
         public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> SearchExaminationAsync(SearchQueryRequestDto request)
@@ -217,83 +162,27 @@ namespace App.Application.Services
                     exam.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
                 ).ToList();
 
-
-            // Check if there are results
-            if (!filteredExaminations.Any())
+            if (!filteredExaminations.Any()) return new PagedResponse<IEnumerable<ExaminationResponseDto>>
             {
-                return new PagedResponse<IEnumerable<ExaminationResponseDto>>
-                {
-                    IsSuccessful = false,
-                    Message = "No Match Found",
-                    Data = null
-                };
-            }
-
-            var totalRecords = filteredExaminations.Count();
-            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
-
-            // Pagination parameters
-            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1; // Default to page 1 if invalid
-            int pageSize = request.PageSize > 0 ? request.PageSize : 5; // Default to page size 5 if invalid
-
-            // Paginate the results
-            var paginatedExams = filteredExaminations
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            // Map to DTOs
-            var responseData = paginatedExams.Select(MapToExaminationResponseDto).ToList();
-
-            return new PagedResponse<IEnumerable<ExaminationResponseDto>>
-            {
-                IsSuccessful = true,
-                Message = "Examinations Retrieved Successfully",
-                TotalRecords = totalRecords,
-                TotalPages = totalPages,
-                PageSize = pageSize,
-                CurrentPage = pageNumber,
-                Data = responseData
+                IsSuccessful = false,
+                Message = "No Match Found",
+                Data = null
             };
-        }
 
-        // Helper method to map Examination to ExaminationResponseDto
-        private ExaminationResponseDto MapToExaminationResponseDto(Examination examination)
-        {
-            return new ExaminationResponseDto
-            {
-                Id = examination.Id,
-                ExamTitle = examination.ExamTitle,
-                ExamDate = examination.ExamDateAndTime.ToString("D"),
-                ExamTime = examination.ExamDateAndTime.ToString("t"),
-                ExamYear = examination.ExamYear,
-                Status = examination.Status,
-                Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
-                Courses = examination.Courses.Select(c => new CourseResponseDto
-                {
-                    Id = c.Id,
-                    CourseTitle = c.CourseTitle,
-                    CourseCode = c.CourseCode,
-                    CourseUnit = c.CourseUnit,
-                    Status = c.Status
-                }).ToList()
-            };
+            var response = PaginatedResponse(request.PageSize, request.PageNumber, filteredExaminations);
+            return response;
         }
-
 
         public async Task<ApiResponse<ExaminationResponseDto>> UpdateAsync(Guid id, UpdateExaminationRequestDto request)
         {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var examination = await examinationRepository.GetExaminationAsync(e => e.Id == id, includeCourses: true);
-            if (examination == null)
+            if (examination == null) return new ApiResponse<ExaminationResponseDto>
             {
-                return new ApiResponse<ExaminationResponseDto>
-                {
-                    IsSuccessful = false,
-                    Message = "Examination Not Found",
-                    Data = null
-                };
-            }
+                IsSuccessful = false,
+                Message = "Examination Not Found",
+                Data = null
+            };
 
             // Update examination details
             examination.ExamTitle = request.ExamTitle ?? examination.ExamTitle;
@@ -344,6 +233,111 @@ namespace App.Application.Services
                         Status = c.Status
                     }).ToList()
                 }
+            };
+        }
+
+        public async Task<PagedResponse<IEnumerable<ExaminationResponseDto>>> GetUserExaminationsAsync(int pageSize, int pageNumber)
+        {
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var user = await userManager.FindByEmailAsync(loginUser!);
+            var userExaminations = await examinationRepository.GetExaminationsAsync(user!);
+            if (!userExaminations.Any()) return new PagedResponse<IEnumerable<ExaminationResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "You have no examinations",
+                Data = null
+            };
+
+            var response = PaginatedResponse(pageSize, pageNumber, userExaminations.ToList());
+            return response;
+        }
+
+        private static PagedResponse<IEnumerable<ExaminationResponseDto>> PaginatedResponse(int requestPageSize, int requestPageNumber, List<Examination> examinations)
+        {
+            // Handle cases where request page size or page number is zero
+            if (requestPageSize == 0 || requestPageNumber == 0)
+            {
+                return new PagedResponse<IEnumerable<ExaminationResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "All examinations available",
+                    Data = examinations.Select(examination => new ExaminationResponseDto
+                    {
+                        Id = examination.Id,
+                        ExamTitle = examination.ExamTitle,
+                        ExamDate = examination.ExamDateAndTime.ToString("D"),
+                        ExamTime = examination.ExamDateAndTime.ToString("t"),
+                        ExamYear = examination.ExamYear,
+                        Status = examination.Status,
+                        Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                        Courses = examination.Courses.Select(c => new CourseResponseDto
+                        {
+                            Id = c.Id,
+                            CourseTitle = c.CourseTitle,
+                            CourseCode = c.CourseCode,
+                            CourseUnit = c.CourseUnit,
+                            Status = c.Status
+                        }).ToList()
+                    }).ToList()
+                };
+            }
+
+            // Pagination parameters
+            int pageNumber = requestPageNumber > 0 ? requestPageNumber : 1; // Default to page 1 if invalid
+            int pageSize = requestPageSize > 0 ? requestPageSize : 5; // Default to page size 5 if invalid
+
+            var totalRecords = examinations.Count;
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // If pageNumber exceeds total pages, return an empty response
+            if (pageNumber > totalPages)
+            {
+                return new PagedResponse<IEnumerable<ExaminationResponseDto>>
+                {
+                    IsSuccessful = true,
+                    Message = "No more examinations available",
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    CurrentPage = pageNumber,
+                    Data = new List<ExaminationResponseDto>()
+                };
+            }
+
+            // Paginate the results
+            var paginatedExams = examinations
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedResponseData = paginatedExams.Select(examination => new ExaminationResponseDto
+            {
+                Id = examination.Id,
+                ExamTitle = examination.ExamTitle,
+                ExamDate = examination.ExamDateAndTime.ToString("D"),
+                ExamTime = examination.ExamDateAndTime.ToString("t"),
+                ExamYear = examination.ExamYear,
+                Status = examination.Status,
+                Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                Courses = examination.Courses.Select(c => new CourseResponseDto
+                {
+                    Id = c.Id,
+                    CourseTitle = c.CourseTitle,
+                    CourseCode = c.CourseCode,
+                    CourseUnit = c.CourseUnit,
+                    Status = c.Status
+                }).ToList()
+            }).ToList();
+
+            return new PagedResponse<IEnumerable<ExaminationResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Examinations retrieved successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = paginatedResponseData
             };
         }
     }

@@ -4,6 +4,6 @@ namespace App.Core.Interfaces.Repositories
 {
     public interface IFileRepository
     {
-        Task<string> UploadAsync(IFormFile file);
+        Task<string> UploadAsync(IFormFile file, HttpRequest request);
     }
 }

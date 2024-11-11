@@ -9,6 +9,7 @@ namespace App.Core.Interfaces.Repositories
         Result Update(Result result);
         void Delete(Result result);
         Task<IEnumerable<Result>> GetResultsAsync();
+        Task<IEnumerable<Result>> GetResultsAsync(User user);
         Task<Result> GetResultAsync(Expression<Func<Result, bool>> predicate);
     }
 }

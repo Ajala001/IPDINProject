@@ -32,6 +32,15 @@ namespace App.Presentation.Controllers
         }
 
 
+        [HttpGet("user")]
+        public async Task<IActionResult> GetUserExaminationsAsync(int pageSize, int pageNumber)
+        {
+            var result = await sender.Send(new GetUserExamsQuery(pageSize, pageNumber));
+            if (!result.IsSuccessful) return NotFound(result);
+            return Ok(result);
+        }
+
+
         [Authorize(Roles = "Admin, Member")]
         [HttpGet("search")]
         public async Task<IActionResult> SearchForExaminationAsync([FromQuery] SearchQueryRequestDto searchRequestDto)

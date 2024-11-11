@@ -29,6 +29,7 @@ namespace App.Infrastructure
             services.AddScoped<IResultRepository, ResultRepository>();
             services.AddScoped<ITrainingRepository, TrainingRepository>();
             services.AddScoped<ILevelRepository, LevelRepository>();
+            services.AddScoped<IBatchResultRepository, BatchResultRepository>();
             services.AddScoped<IFileRepository, FileRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 

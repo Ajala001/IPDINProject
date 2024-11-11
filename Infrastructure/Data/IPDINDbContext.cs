@@ -2,7 +2,6 @@
 using App.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 namespace App.Infrastructure.Data
 {
     public class IPDINDbContext : IdentityDbContext<User, Role, Guid>
@@ -16,6 +15,7 @@ namespace App.Infrastructure.Data
         public DbSet<Examination> Examinations { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Result> Results { get; set; }
+        public DbSet<BatchResult> BatchResults { get; set; }
         public DbSet<Training> Trainings { get; set; }
         public DbSet<Level> Levels { get; set; }
         public DbSet<AcademicQualification> AcademicQualifications { get; set; }
@@ -41,15 +41,20 @@ namespace App.Infrastructure.Data
 
             // Configure 1-to-1 relationships
             builder.Entity<Examination>()
-               .HasOne(e => e.Result)        
-               .WithOne(r => r.Examination)       
-               .HasForeignKey<Result>(r => r.ExaminationId);  
+               .HasOne(e => e.BatchResult)        
+               .WithOne(br => br.Examination)       
+               .HasForeignKey<BatchResult>(br => br.ExaminationId);  
 
             // Configure 1-to-Many relationships
             builder.Entity<User>()
                 .HasMany(u => u.Payments)
                 .WithOne(p => p.User)
                 .HasForeignKey(p => p.UserId);
+
+            builder.Entity<BatchResult>()
+                .HasMany(br => br.Results)
+                .WithOne(r => r.BatchResult)
+                .HasForeignKey(r => r.BatchId);
 
             builder.Entity<User>()
                 .HasMany(u => u.Results)

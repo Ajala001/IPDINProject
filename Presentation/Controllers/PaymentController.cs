@@ -23,7 +23,16 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
-       
+
+        [HttpGet("user")]
+        public async Task<IActionResult> GetUserPaymentsAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
+        {
+            var result = await sender.Send(new GetUserPaymentsQuery(pageSize, pageNumber));
+            if (result.IsSuccessful) return Ok(result);
+            return BadRequest(result);
+        }
+
+
         [HttpPost("initiatePayment")]
         public async Task<IActionResult> InitiatePaymentAsync([FromBody] CreatePaymentRequestDto request)
         {

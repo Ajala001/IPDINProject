@@ -9,8 +9,9 @@ namespace App.Core.Interfaces.Repositories
         Examination Update(Examination examination);
         void Delete(Examination examination);
         Task<IEnumerable<Examination>> GetExaminationsAsync();
+        Task<IEnumerable<Examination>> GetExaminationsAsync(User user);
         Task<IEnumerable<Examination>> SearchExaminationAsync(string courseTitle, string courseCode);
         Task<Examination> GetExaminationAsync(Expression<Func<Examination, bool>> predicate, bool includeCourses = false);
-        Task<ICollection<Examination>> GetSelectedAsync(Expression<Func<Examination, bool>> predicate);
+        Task<IEnumerable<Examination>> GetSelectedAsync(Expression<Func<Examination, bool>> predicate);
     }
 }

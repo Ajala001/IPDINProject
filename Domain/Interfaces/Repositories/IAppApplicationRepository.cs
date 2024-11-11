@@ -10,6 +10,7 @@ namespace App.Core.Interfaces.Repositories
         void Delete(AppApplication application);
         void DeleteAll(List<AppApplication> applications);
         IQueryable<AppApplication> GetApplicationsAsync();
+        IQueryable<AppApplication> GetApplicationsAsync(User user);
         Task<AppApplication> GetApplicationAsync(Expression<Func<AppApplication, bool>> predicate);
 
 

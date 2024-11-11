@@ -11,6 +11,7 @@ namespace App.Core.Interfaces.Services
         Task<ApiResponse<TrainingResponseDto>> UpdateAsync(Guid id, UpdateTrainingRequestDto request);
         Task<ApiResponse<TrainingResponseDto>> DeleteAsync(Guid id);
         Task<PagedResponse<IEnumerable<TrainingResponseDto>>> GetTainingsAsync(int pageSize, int pageNumber);
+        Task<PagedResponse<IEnumerable<TrainingResponseDto>>> GetUserTainingsAsync(int pageSize, int pageNumber);
         Task<ApiResponse<TrainingResponseDto>> GetTrainingAsync(Guid id);
         Task<PagedResponse<IEnumerable<TrainingResponseDto>>> SearchTrainingAsync(SearchQueryRequestDto request);
     }

@@ -23,9 +23,18 @@ namespace App.Presentation.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> GetAllApplicationAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
+        public async Task<IActionResult> GetAllApplicationsAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
         {
             var result = await sender.Send(new GetAllAppApplicationsQuery(pageSize, pageNumber));
+            if (!result.IsSuccessful) return NotFound(new { error = result.Message });
+            return Ok(result);
+        }
+
+
+        [HttpGet("user")]
+        public async Task<IActionResult> GetUserApplicationAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
+        {
+            var result = await sender.Send(new GetUserApplicationsQuery(pageSize, pageNumber));
             if (!result.IsSuccessful) return NotFound(new { error = result.Message });
             return Ok(result);
         }

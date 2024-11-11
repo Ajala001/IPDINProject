@@ -5,11 +5,12 @@ using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
-using App.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Org.BouncyCastle.Asn1.Ocsp;
 using PayStack.Net;
+using System.Drawing.Printing;
 using System.Security.Claims;
 
 namespace App.Infrastructure.ExternalServices
@@ -359,14 +360,45 @@ namespace App.Infrastructure.ExternalServices
                 Data = null
             };
 
-            int pageSize = request.PageSize > 0 ? request.PageSize : 5;
-            int pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+            var response = PaginatedResponse(request.PageSize, request.PageNumber, searchedPayments);
+            return response;
+        }
 
-            var totalRecords = searchedPayments.Count();
-            var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+        private bool HasPendingApplication(User user, Guid entityId)
+        {
+            return user.Applications
+                .Any(application =>
+                    application.ApplicationId == entityId &&
+                    application.Status == Core.Enums.ApplicationStatus.Pending);
+        }
+
+        public async Task<PagedResponse<IEnumerable<PaymentResponseDto>>> GetUserPaymentsAsync(int pageSize, int pageNumber)
+        {
+            var loginUser = _contextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var user = await _userManager.FindByEmailAsync(loginUser!);
+            var userPayments = await _paymentRepository.GetPaymentsAsync(user!);
+            if (!userPayments.Any()) return new PagedResponse<IEnumerable<PaymentResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "You have no payments",
+                Data = null
+            };
+
+            var response = PaginatedResponse(pageSize, pageNumber, userPayments.ToList());
+            return response;
+        }
 
 
-            var paginatedPayments = searchedPayments
+        private static PagedResponse<IEnumerable<PaymentResponseDto>> PaginatedResponse(int requestpageSize, int requestPageNumber, List<Payment> payments)
+        {
+            int pageSize = requestpageSize > 0 ? requestpageSize : 5;
+            int pageNumber = requestPageNumber > 0 ? requestPageNumber : 1;
+
+            var totalRecords = payments.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / requestpageSize);
+
+
+            var paginatedPayments = payments
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
@@ -392,14 +424,6 @@ namespace App.Infrastructure.ExternalServices
                 CurrentPage = pageNumber,
                 Data = responseData
             };
-        }
-
-        private bool HasPendingApplication(User user, Guid entityId)
-        {
-            return user.Applications
-                .Any(application =>
-                    application.ApplicationId == entityId &&
-                    application.Status == Core.Enums.ApplicationStatus.Pending);
         }
     }
 }

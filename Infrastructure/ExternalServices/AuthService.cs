@@ -14,8 +14,8 @@ using System.Text;
 
 namespace App.Infrastructure.ExternalServices
 {
-    public class AuthService(UserManager<User> userManager, SignInManager<User> signInManager,
-        IConfiguration configuration, IEmailService emailService, IUnitOfWork unitOfWork) : IAuthService
+    public class AuthService(UserManager<User> userManager, SignInManager<User> signInManager, IAcademicQualificationRepository qualificationRepository,
+        IConfiguration configuration, IEmailService emailService, IUnitOfWork unitOfWork, ILevelRepository levelRepository) : IAuthService
     {
         public async Task<ApiResponse<UserResponseDto>> SignUpAsync(SignUpRequestDto request)
         {
@@ -23,68 +23,94 @@ namespace App.Infrastructure.ExternalServices
             if (existingUser != null) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = false,
-                Message = $"User with email {existingUser.Email} already exist"
-            };
-           
-            var newUser = new User
-            {
-                Id = Guid.NewGuid(),
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Email = request.Email,
-                PhoneNumber = request.PhoneNumber,
-                UserName = request.Email,
-                Gender = request.Gender,
-                DateOfBirth = request.DateOfBirth,
-                Country = request.Country,
-                StateOfResidence = request.StateOfResidence,
-                DriverLicenseNo = request.DriverLicenseNo,
-                YearIssued = request.YearIssued,
-                ExpiringDate = request.ExpiringDate,
-                YearsOfExperience = request.YearsOfExperience,
-                NameOfCurrentDrivingSchool = request.NameOfCurrentDrivingSchool,
-                LevelId = request.LevelId,
-                CreatedBy = request.Email,
-                CreatedOn = DateTime.Now,
+                Message = $"User with email {existingUser.Email} already exists"
             };
 
-            foreach (var qualificationDto in request.AcademicQualifications)
+            var level = await levelRepository.GetLevelAsync(l => l.Id == request.LevelId);
+            using (var transaction = await unitOfWork.BeginTransactionAsync())
             {
-                var qualification = new AcademicQualification
+                try
                 {
-                    Degree = qualificationDto.Degree,
-                    FieldOfStudy = qualificationDto.FieldOfStudy,
-                    Institution = qualificationDto.Institution,
-                    YearAttained = qualificationDto.YearAttained,
-                    CreatedBy = newUser.Email,
-                    CreatedOn = DateTime.Now
-                };
+                    var newUser = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        FirstName = request.FirstName,
+                        LastName = request.LastName,
+                        Email = request.Email,
+                        PhoneNumber = request.PhoneNumber,
+                        UserName = request.Email,
+                        LevelId = request.LevelId,
+                        Gender = request.Gender,
+                        DateOfBirth = request.DateOfBirth,
+                        Country = request.Country,
+                        StateOfResidence = request.StateOfResidence,
+                        DriverLicenseNo = request.DriverLicenseNo,
+                        YearIssued = request.YearIssued,
+                        ExpiringDate = request.ExpiringDate,
+                        YearsOfExperience = request.YearsOfExperience,
+                        NameOfCurrentDrivingSchool = request.NameOfCurrentDrivingSchool,
+                        CreatedBy = request.Email,
+                        CreatedOn = DateTime.Now
+                    };
+                    var result = await userManager.CreateAsync(newUser, request.Password);
+                    if (!result.Succeeded)
+                    {
+                        await transaction.RollbackAsync();
+                        return new ApiResponse<UserResponseDto>
+                        {
+                            IsSuccessful = false,
+                            Message = string.Join(", ", result.Errors.Select(e => e.Description)) ?? "Registration failed"
+                        };
+                    }
 
-                var userAcademicQualification = new UserAcademicQualifications
+                    level.Users.Add(newUser);
+                    foreach (var qualificationDto in request.AcademicQualifications)
+                    {
+                        var qualification = new AcademicQualification
+                        {
+                            Id = Guid.NewGuid(),
+                            Degree = qualificationDto.Degree,
+                            FieldOfStudy = qualificationDto.FieldOfStudy,
+                            Institution = qualificationDto.Institution,
+                            YearAttained = qualificationDto.YearAttained,
+                            CreatedBy = newUser.Email,
+                            CreatedOn = DateTime.Now
+                        };
+                        await qualificationRepository.CreateAsync(qualification);
+
+                        var userAcademicQualification = new UserAcademicQualifications
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = newUser.Id,
+                            QualificationId = qualification.Id,
+                            User = newUser,
+                            Qualification = qualification
+                        };
+                        newUser.UserAcademicQualifications.Add(userAcademicQualification);
+                    }
+
+                    await unitOfWork.SaveAsync();
+                    await transaction.CommitAsync();
+                    await AssignRoleAndSendConfirmationEmailAsync(newUser, "Member");
+                    return new ApiResponse<UserResponseDto>
+                    {
+                        IsSuccessful = true,
+                        Message = "Registration successful and a confirmation email sent to you"
+                    };
+                }
+                catch (Exception ex)
                 {
-                    UserId = newUser.Id,
-                    User = newUser,
-                    QualificationId = qualification.Id,
-                    Qualification = qualification
-                };
-                newUser.UserAcademicQualifications.Add(userAcademicQualification);
+                    await transaction.RollbackAsync();
+                    return new ApiResponse<UserResponseDto>
+                    {
+                        IsSuccessful = false,
+                        Message = $"Registration failed due to an error: {ex.Message}"
+                    };
+                }
             }
-            var result = await userManager.CreateAsync(newUser, request.Password);
-            if(result.Succeeded)
-            {
-                await AssignRoleAndSendConfirmationEmailAsync(newUser, "Member");
-                return new ApiResponse<UserResponseDto>
-                {
-                    IsSuccessful = true,
-                    Message = "Registration successful and a confirmation email sent to you"
-                };
-            }
-            return new ApiResponse<UserResponseDto>
-            {
-                IsSuccessful = false,
-                Message = "Registration Failed"
-            };
         }
+
+
 
 
         public async Task<ApiResponse<string>> SignInAsync(SignInRequestDto request)
@@ -222,6 +248,7 @@ namespace App.Infrastructure.ExternalServices
             var credential = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
             var roles = await userManager.GetRolesAsync(user);
+            var userLevel = await levelRepository.GetLevelAsync(l => l.Id == user.LevelId);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
@@ -229,7 +256,7 @@ namespace App.Infrastructure.ExternalServices
                 new Claim("GivenName", user.FirstName),
                 new Claim("NameIdentifier", user.UserName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim("Level", user.Level.ToString())
+                new Claim("Level", userLevel.Name)
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
