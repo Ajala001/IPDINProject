@@ -403,3 +403,4 @@ FodyWeavers.xsd
 /Infrastructure/Repositories/RegistrationTypeRepository.cs
 /Presentation/Controllers/RegistrationTypeController.cs
 /Domain/DTOs/Responses/RegistrationTypeResponseDto.cs
+Presentation/appsettings.json
