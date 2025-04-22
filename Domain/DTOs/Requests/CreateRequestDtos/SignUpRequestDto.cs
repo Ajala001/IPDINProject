@@ -6,7 +6,7 @@ namespace App.Core.DTOs.Requests.CreateRequestDtos
     public class SignUpRequestDto
     {
         public required Guid LevelId { get; set; }
-        [Required(ErrorMessage = "Please Enter Your Last Name")]
+        [Required(ErrorMessage = "Please Choose a level")]
         public required string LastName { get; set; }
 
         [Required(ErrorMessage = "Please Enter Your First Name")]

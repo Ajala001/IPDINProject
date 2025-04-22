@@ -6,7 +6,9 @@ namespace App.Core.Entities
     {
         public required string Title { get; set; }
         public string? Description { get; set; }
-        public required int Fee { get; set; }
+        public required decimal Fee { get; set; }
+        public decimal ApplicationFee { get; set; }
+        public bool Haspaid { get; set; } = false;
         public required DateTime StartingDateAndTime { get; set; }
         public required DateTime EndingDateAndTime { get; set; }
         public required DateTime RegistrationDeadline { get; set; }

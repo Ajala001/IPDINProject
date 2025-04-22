@@ -34,6 +34,7 @@ namespace App.Application.Services
                 Title = request.Title,
                 Description = request.Description,
                 Fee = request.Fee,
+                ApplicationFee = request.Fee * 0.1m,
                 StartingDateAndTime = request.StartingDateAndTime,
                 EndingDateAndTime = request.EndingDateAndTime,
                 RegistrationDeadline = request.RegistrationDeadline,
@@ -58,6 +59,7 @@ namespace App.Application.Services
                     Title = newTraining.Title,
                     Description = newTraining.Description,
                     Fee = newTraining.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = newTraining.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = newTraining.StartingDateAndTime,
                     EndingDateAndTime = newTraining.EndingDateAndTime,
                     RegistrationDeadline = request.RegistrationDeadline,
@@ -112,6 +114,7 @@ namespace App.Application.Services
                     Title = training.Title,
                     Description = training.Description,
                     Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = training.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = training.StartingDateAndTime,
                     EndingDateAndTime = training.EndingDateAndTime,
                     RegistrationDeadline = training.RegistrationDeadline,
@@ -161,6 +164,7 @@ namespace App.Application.Services
                 Title = training.Title,
                 Description = training.Description,
                 Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                ApplicationFee = training.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 StartingDateAndTime = training.StartingDateAndTime,
                 EndingDateAndTime = training.EndingDateAndTime,
                 RegistrationDeadline = training.RegistrationDeadline,
@@ -202,6 +206,7 @@ namespace App.Application.Services
                     Title = training.Title,
                     Description = training.Description,
                     Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = training.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = training.StartingDateAndTime,
                     EndingDateAndTime = training.EndingDateAndTime,
                     RegistrationDeadline = training.RegistrationDeadline,
@@ -270,6 +275,7 @@ namespace App.Application.Services
                     Title = training.Title,
                     Description = training.Description,
                     Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = training.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     StartingDateAndTime = training.StartingDateAndTime,
                     EndingDateAndTime = training.EndingDateAndTime,
                     RegistrationDeadline = training.RegistrationDeadline,
@@ -305,7 +311,7 @@ namespace App.Application.Services
             int pageNumber = requestPageNumber > 0 ? requestPageNumber : 1;
 
             var totalRecords = trainings.Count;
-            var totalPages = (int)Math.Ceiling((double)totalRecords / requestpageSize);
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
 
             var paginatedTrainings = trainings
@@ -319,6 +325,7 @@ namespace App.Application.Services
                 Title = training.Title,
                 Description = training.Description,
                 Fee = training.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                ApplicationFee = training.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 StartingDateAndTime = training.StartingDateAndTime,
                 EndingDateAndTime = training.EndingDateAndTime,
                 RegistrationDeadline = training.RegistrationDeadline,

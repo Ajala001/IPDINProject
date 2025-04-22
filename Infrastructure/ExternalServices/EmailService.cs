@@ -1,55 +1,69 @@
 ﻿using App.Application.IExternalServices;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.Interfaces;
-using Microsoft.Extensions.Options;
-using System.Net;
-using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
+using sib_api_v3_sdk.Api;
+using sib_api_v3_sdk.Model;
+using System.Diagnostics;
 
 namespace App.Infrastructure.ExternalServices
 {
     public class EmailService: IEmailService
     {
         private readonly IAppEnvironment _appEnvironment;
-        private readonly EmailSettings _emailSettings;
+        private readonly TransactionalEmailsApi _apiInstance;
+        private readonly IConfiguration _configuration;
 
-        public EmailService(IAppEnvironment appEnvironment, IOptions<EmailSettings> emailSettings)
+        public EmailService(IAppEnvironment appEnvironment, TransactionalEmailsApi transactionalEmailsApi, 
+            IConfiguration configuration)
         {
             _appEnvironment = appEnvironment;
-            _emailSettings = emailSettings.Value;
+            _apiInstance = transactionalEmailsApi;
+            _configuration = configuration;
         }
-        public MailMessage CreateMailMessage(MailRequestDto request)
+
+        private void SendEmail(SendEmailDto emailDto)
         {
-            MailMessage mailMessage = new MailMessage
+            SendSmtpEmailSender sender = new SendSmtpEmailSender(emailDto.SenderName, emailDto.SenderEmail);
+            var recipients = new List<SendSmtpEmailTo>
             {
-                From = new MailAddress(_emailSettings.Email, _emailSettings.DisplayName),
-                Subject = request.Subject,
-                Body = request.Body,
-                IsBodyHtml = true
+                new SendSmtpEmailTo(emailDto.ReceiverEmail, emailDto.ReceiverName)
             };
 
-            mailMessage.To.Add(request.ToEmail);  // Add recipient(s) here
-
-            return mailMessage;
-        }
-
-        public void SendEmail(MailMessage mailMessage)
-        {
-            using (SmtpClient smtpClient = new SmtpClient(_emailSettings.Host, _emailSettings.Port))
+            try
             {
-                smtpClient.Credentials = new NetworkCredential(_emailSettings.Email, _emailSettings.Password);
-                smtpClient.EnableSsl = true;
-                smtpClient.Send(mailMessage);
+                var sendSmtpEmail = new SendSmtpEmail(sender, recipients, null, null, emailDto.HtmlContent, null, emailDto.Subject);
+                CreateSmtpEmail result = _apiInstance.SendTransacEmail(sendSmtpEmail);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error sending email: {ex.Message}");
+                throw; // Rethrow to let global exception handling take over
             }
         }
 
-        public string CreateBody(string userName, string appName, string confimationLink, string membershipNo)
+        public void SendEmail(string templateName, Dictionary<string, string> replacements, string receiverEmail, string receiverName, string subject)
         {
-            var filePath = Path.Combine(_appEnvironment.WebRootPath, "html", "ConfirmationEmailTemplate.html");
+            var sendEmailDto = new SendEmailDto
+            {
+                SenderEmail = _configuration["BrevoEmailApi:SenderEmail"]!,
+                SenderName = _configuration["BrevoEmailApi:SenderName"]!,
+                ReceiverEmail = receiverEmail,
+                ReceiverName = receiverName,
+                Subject = subject,
+                HtmlContent = CreateBody(templateName, replacements)
+            };
+
+            SendEmail(sendEmailDto);
+        }
+
+        public string CreateBody(string templateFileName, Dictionary<string, string> replacements)
+        {
+            var filePath = Path.Combine(_appEnvironment.WebRootPath, "html", templateFileName);
             if (!File.Exists(filePath))
             {
                 return "Path not found";
             }
-
 
             string body = string.Empty;
             using (StreamReader reader = new StreamReader(filePath))
@@ -57,12 +71,13 @@ namespace App.Infrastructure.ExternalServices
                 body = reader.ReadToEnd();
             }
 
-            body = body.Replace("{{UserName}}", userName);
-            body = body.Replace("{{MembershipNo}}", membershipNo);
-            body = body.Replace("{{AppName}}", appName);
-            body = body.Replace("{{ConfirmationLink}}", confimationLink);
+            foreach (var replacement in replacements)
+            {
+                body = body.Replace($"{{{{{replacement.Key}}}}}", replacement.Value);
+            }
 
             return body;
         }
+
     }
 }

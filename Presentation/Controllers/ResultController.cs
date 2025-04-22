@@ -10,15 +10,31 @@ namespace App.Presentation.Controllers
 {
     [Route("api/results")]
     [ApiController]
-    public class ResultController(ISender sender) : ControllerBase
+    public class ResultController : ControllerBase
     {
-        [Authorize(Roles = "Admin")]
-        [HttpGet("/{membershipNumber}")]
-        public async Task<IActionResult> GetAllResultAsync([FromRoute] string membershipNumber)
+        private readonly ISender sender;
+        public ResultController(ISender _sender)
         {
-            var result = await sender.Send(new GetAllResultQuery(membershipNumber));
+            sender = _sender;
+        }
+       
+        [HttpGet("member/{membershipNumber}")]
+        public async Task<IActionResult> GetMemberResultsAsync([FromRoute] string membershipNumber, [FromQuery] int pageSize, [FromQuery] int pageNumber)
+        {
+            string decodedMembershipNumber = Uri.UnescapeDataString(membershipNumber);
+            var result = await sender.Send(new GetMemberResultsQuery(decodedMembershipNumber, pageSize, pageNumber));
             if (result.IsSuccessful) return Ok(result);
-            return BadRequest(result);
+            return NotFound(result);
+        }
+
+
+        [Authorize(Roles = "Admin, Member")]
+        [HttpGet("batch/{batchResultId}")]
+        public async Task<IActionResult> GetBatchResultsAsync([FromRoute] Guid batchResultId, [FromQuery] int pageSize, [FromQuery] int pageNumber)
+        {
+            var result = await sender.Send(new GetBatchResultQuery(batchResultId, pageSize, pageNumber));
+            if (result.IsSuccessful) return Ok(result);
+            return NotFound(result);
         }
 
 
@@ -28,7 +44,7 @@ namespace App.Presentation.Controllers
         {
             var result = await sender.Send(new GetResultByIdQuery(resultId));
             if (result.IsSuccessful) return Ok(result);
-            return BadRequest(result);
+            return NotFound(result);
         }
 
 
@@ -47,16 +63,28 @@ namespace App.Presentation.Controllers
         {
             var result = await sender.Send(new UpdateResultCommand(membershipNumber, updateRequest));
             if (result.IsSuccessful) return Ok(result);
-            return BadRequest(result);
+            return NotFound(result);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{membershipNumber}")]
-        public async Task<IActionResult> DeleteResultAsync([FromRoute] string membershipNumber)
+        [HttpDelete("{resultId}")]
+        public async Task<IActionResult> DeleteResultAsync([FromRoute] Guid resultId)
         {
-            var result = await sender.Send(new DeleteResultCommand(membershipNumber));
+            var result = await sender.Send(new DeleteResultCommand(resultId));
             if (result.IsSuccessful) return Ok(result);
-            return BadRequest(result);
+            return NotFound(result);
+        }
+
+        [Authorize(Roles = "Admin, Member")]
+        [HttpGet("download/{resultId}")]
+        public async Task<IActionResult> GenerateResult([FromRoute] Guid resultId)
+        {
+            var result = await sender.Send(new DownloadResultQuery(resultId));
+            if (!result.IsSuccessful)
+            {
+                return NotFound(new { error = result.Message });
+            }
+            return File(result.Data, "application/pdf", "Result.pdf");
         }
     }
 }

@@ -23,6 +23,8 @@ namespace App.Core.Entities
         public required string DriverLicenseNo { get; set; }
         public short YearIssued { get; set; }
         public DateTime ExpiringDate { get; set; }
+        public string RefreshToken { get; set; } = string.Empty;
+        public DateTime? RefreshTokenExpiry { get; set; }
         public short YearsOfExperience { get; set; }
         public required string NameOfCurrentDrivingSchool { get; set; }
         public ICollection<Result> Results { get; set; } = new List<Result>();

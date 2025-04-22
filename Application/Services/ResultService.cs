@@ -1,9 +1,12 @@
-﻿using App.Core.DTOs.Requests.SearchRequestDtos;
+﻿using App.Application.HtmlFormat;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +15,13 @@ using System.Security.Claims;
 namespace App.Application.Services
 {
     public class ResultService(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor,
-        IResultRepository resultRepository, IUnitOfWork unitOfWork) : IResultService
+        IResultRepository resultRepository, IBatchResultRepository batchResultRepository, IUnitOfWork unitOfWork,
+         IResultFormat resultFormat, IConverter converter) : IResultService
     {
         
-        public async Task<ApiResponse<StudentResultResponseDto>> DeleteAsync(string membershipNumber)
+        public async Task<ApiResponse<StudentResultResponseDto>> DeleteAsync(Guid resultId)
         {
-            var result = await resultRepository.GetResultAsync(r => r.User.MembershipNumber == membershipNumber);
+            var result = await resultRepository.GetResultAsync(r => r.Id == resultId);
             if (result == null) return new ApiResponse<StudentResultResponseDto>
             {
                 IsSuccessful = false,
@@ -53,52 +57,134 @@ namespace App.Application.Services
                 Data = new StudentResultResponseDto
                 {
                     Id = result.Id,
+                    BatchId = result.BatchId,
+                    ExamId = result.BatchResult.ExaminationId,
+                    Email = result.User.Email!,
                     FullName = $"{result.User.FirstName} {result.User.LastName}",
-                    ExamTitle = result.BatchResult.Examination.ExamTitle,
+                    PhoneNumber = result.User.PhoneNumber!,
+                    MembershipNumber = result.User.MembershipNumber!,
+                    ProfilePic = result.User.ProfilePic!,
                     TotalScore = result.TotalScore,
                     Breakdown = result.Breakdown
                 }
             };
         }
 
-        public async Task<ApiResponse<IEnumerable<StudentResultResponseDto>>> GetResultsAsync(string membershipNumber)
+        public async Task<PagedResponse<IEnumerable<StudentResultResponseDto>>> GetMemberResultsAsync(string membershipNumber, int pageSize, int pageNumber)
         {
             var user = await userManager.Users
                         .Where(u => u.MembershipNumber == membershipNumber)
                         .FirstOrDefaultAsync();
 
-            if (user == null) return new ApiResponse<IEnumerable<StudentResultResponseDto>>
+            if (user == null) return new PagedResponse<IEnumerable<StudentResultResponseDto>>
             {
                 IsSuccessful = false,
                 Message = "User not found",
                 Data = null
             };
 
-            // Fetch the results associated with the user
             var results = await resultRepository.GetResultsAsync(user);
-            if (results == null || !results.Any()) return new ApiResponse<IEnumerable<StudentResultResponseDto>>
+            if (results == null || !results.Any()) return new PagedResponse<IEnumerable<StudentResultResponseDto>>
             {
                 IsSuccessful = false,
                 Message = "No results found for the user",
                 Data = null
             };
 
+            pageSize = pageSize > 0 ? pageSize : 5;
+            pageNumber = pageNumber > 0 ? pageNumber : 1;
+
+            var totalRecords = results.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+
+            var paginatedResults = results
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
             // Map results to DTO
-            var resultDtos = results.Select(result => new StudentResultResponseDto
+            var responseData = paginatedResults.Select(result => new StudentResultResponseDto
             {
                 Id = result.Id,
+                BatchId = result.BatchId,
+                ExamId = result.BatchResult.ExaminationId,
                 FullName = $"{result.User.FirstName} {result.User.LastName}",
-                ExamTitle = result.BatchResult.Examination.ExamTitle,
+                Email = result.User.Email!,
+                PhoneNumber = result.User.PhoneNumber!,
+                MembershipNumber = result.User.MembershipNumber!,
+                ProfilePic = result.User.ProfilePic!,
                 TotalScore = result.TotalScore,
                 Breakdown = result.Breakdown
             }).ToList();
 
             // Return the successful response
-            return new ApiResponse<IEnumerable<StudentResultResponseDto>>
+            return new PagedResponse<IEnumerable<StudentResultResponseDto>>
             {
                 IsSuccessful = true,
-                Message = "Results retrieved successfully",
-                Data = resultDtos
+                Message = "Results Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = responseData
+            };
+        }
+
+
+        public async Task<PagedResponse<IEnumerable<StudentResultResponseDto>>> GetBatchResultsAsync(Guid batchResultId, int pageSize, int pageNumber)
+        {
+            var batchResult = await batchResultRepository.GetBatchResultAsync(br => br.Id == batchResultId);
+            if (batchResult == null) return new PagedResponse<IEnumerable<StudentResultResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "Batch Result not found",
+                Data = null
+            };
+
+            var results = await resultRepository.GetResultsAsync(batchResult);
+            if (results == null || !results.Any()) return new PagedResponse<IEnumerable<StudentResultResponseDto>>
+            {
+                IsSuccessful = false,
+                Message = "No results found for the batch",
+                Data = null
+            };
+
+            pageSize = pageSize > 0 ? pageSize : 5;
+            pageNumber = pageNumber > 0 ? pageNumber : 1;
+
+            var totalRecords = results.Count();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+
+            var paginatedResults = results
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+            var responseData = paginatedResults.Select(result => new StudentResultResponseDto
+            {
+                Id = result.Id,
+                BatchId = result.BatchId,
+                ExamId = result.BatchResult.ExaminationId,
+                FullName = $"{result.User.FirstName} {result.User.LastName}",
+                Email = result.User.Email!,
+                PhoneNumber = result.User.PhoneNumber!,
+                MembershipNumber = result.User.MembershipNumber!,
+                ProfilePic = result.User.ProfilePic!,
+                TotalScore = result.TotalScore,
+                Breakdown = result.Breakdown
+            }).ToList();
+
+            return new PagedResponse<IEnumerable<StudentResultResponseDto>>
+            {
+                IsSuccessful = true,
+                Message = "Results Retrieved Successfully",
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                PageSize = pageSize,
+                CurrentPage = pageNumber,
+                Data = responseData
             };
         }
 
@@ -131,8 +217,13 @@ namespace App.Application.Services
                 Data = new StudentResultResponseDto
                 {
                     Id = result.Id,
+                    BatchId = result.BatchId,
+                    ExamId = result.BatchResult.ExaminationId,
                     FullName = $"{result.User.FirstName} {result.User.LastName}",
-                    ExamTitle = result.BatchResult.Examination.ExamTitle,
+                    Email = result.User.Email!,
+                    PhoneNumber = result.User.PhoneNumber!,
+                    MembershipNumber = result.User.MembershipNumber!,
+                    ProfilePic = result.User.ProfilePic!,
                     TotalScore = result.TotalScore,
                     Breakdown = result.Breakdown
                 }
@@ -173,8 +264,13 @@ namespace App.Application.Services
             var responseData = paginatedResults.Select(result => new StudentResultResponseDto
             {
                 Id = result.Id,
+                BatchId = result.BatchId,
+                ExamId = result.BatchResult.ExaminationId,
                 FullName = $"{result.User.FirstName} {result.User.LastName}",
-                ExamTitle = result.BatchResult.Examination.ExamTitle,
+                Email = result.User.Email!,
+                PhoneNumber = result.User.PhoneNumber!,
+                MembershipNumber = result.User.MembershipNumber!,
+                ProfilePic = result.User.ProfilePic!,
                 TotalScore = result.TotalScore,
                 Breakdown = result.Breakdown
             }).ToList();
@@ -188,6 +284,37 @@ namespace App.Application.Services
                 PageSize = pageSize,
                 CurrentPage = pageNumber,
                 Data = responseData
+            };
+        }
+
+        public async Task<ApiResponse<byte[]>> GenerateResultAsync(Guid resultId)
+        {
+            var result = await resultRepository.GetResultAsync(r => r.Id == resultId);
+            var htmlContent = await resultFormat.HtmlContent(result);
+
+            var document = new HtmlToPdfDocument
+            {
+                GlobalSettings = {
+                ColorMode = ColorMode.Color,
+                Orientation = Orientation.Portrait,
+                PaperSize = PaperKind.A4
+            },
+                Objects = {
+                new ObjectSettings
+                {
+                    PagesCount = true,
+                    HtmlContent = htmlContent,
+                    WebSettings = { DefaultEncoding = "utf-8" },
+                    FooterSettings = { FontName = "Arial", FontSize = 9, Right = "Page [page] of [toPage]", Line = true }
+                }
+            }
+            };
+
+            return new ApiResponse<byte[]>
+            {
+                IsSuccessful = true,
+                Message = "Successfully Generated",
+                Data = converter.Convert(document)
             };
         }
 

@@ -8,6 +8,7 @@ namespace App.Core.DTOs.Responses
         public string Title { get; set; } = null!;
         public string Description { get; set; } = string.Empty;
         public required string Fee { get; set; }
+        public string ApplicationFee { get; set; } = null!;
         public DateTime StartingDateAndTime { get; set; }
         public DateTime EndingDateAndTime { get; set; }
         public DateTime RegistrationDeadline { get; set; }

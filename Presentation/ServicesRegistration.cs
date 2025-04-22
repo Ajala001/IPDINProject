@@ -5,26 +5,25 @@ using App.Core.Entities;
 using App.Core.Interfaces;
 using App.Infrastructure;
 using App.Infrastructure.Data;
-using App.Infrastructure.ExternalServices;
 using App.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 
 namespace App.Presentation
 {
     public static class ServicesRegistration
     {
-        public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
         {
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("PaidDuesOnly", policy =>
                     policy.Requirements.Add(new PaymentRequirement()));
             });
-
 
             services.AddIdentity<User, Role>(options =>
             {
@@ -48,15 +47,15 @@ namespace App.Presentation
 
             services.AddCors(options =>
             {
-                options.AddPolicy("AllowSpecificOrigin",
+                options.AddPolicy("AllowAngularApp",
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:4200") // Replace with your Angular app's URL
+                        policy.WithOrigins("http://localhost:4200")
+                              .AllowAnyMethod()
                               .AllowAnyHeader()
-                              .AllowAnyMethod();
+                              .AllowCredentials(); // Important to allow cookies
                     });
             });
-
 
             services.AddSwaggerGen(c =>
             {
@@ -89,53 +88,57 @@ namespace App.Presentation
         });
             });
 
-            
-
-
-
-
-
-
 
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+            })
+            .AddJwtBearer(options =>
             {
                 options.SaveToken = true;
-                options.RequireHttpsMetadata = false;
+                options.RequireHttpsMetadata = !env.IsDevelopment(); // Enforce HTTPS in production
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ClockSkew = TimeSpan.Zero, // Ensures token expires exactly when it should
                     ValidAudience = configuration["Jwt:ValidAudience"],
                     ValidIssuer = configuration["Jwt:ValidIssuer"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(configuration.GetSection("Jwt")["Key"] ?? throw new InvalidOperationException("JWT Key is missing"))
+                    ),
+                    RoleClaimType = ClaimTypes.Role
                 };
+                options.IncludeErrorDetails = true; // Helpful for debugging
+
+                // Custom JWT event handling
                 options.Events = new JwtBearerEvents
                 {
-                    OnChallenge = (context) =>
+                    OnChallenge = async context =>
                     {
-                        return Task.CompletedTask;
+                        context.HandleResponse();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        await context.Response.WriteAsync("Unauthorized: Invalid or expired token.");
                     },
-                    OnForbidden = (context) =>
+                    OnForbidden = async context =>
                     {
-                        return Task.CompletedTask;
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        await context.Response.WriteAsync("Forbidden: You don't have permission.");
                     },
-                    OnAuthenticationFailed = (context) =>
+                    OnAuthenticationFailed = async context =>
                     {
-                        return Task.CompletedTask;
-                    },
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        await context.Response.WriteAsync("Authentication failed: Invalid token.");
+                    }
                 };
             });
 
+
             services.AddScoped<IAppEnvironment, AppEnvironment>();
-            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
-            
 
             services.AddApplication()
             .AddCore()

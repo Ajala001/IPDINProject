@@ -1,4 +1,5 @@
 ﻿using App.Application.HtmlFormat;
+using App.Application.IExternalServices;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
@@ -12,6 +13,7 @@ using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using PaperKind = DinkToPdf.PaperKind;
 
@@ -19,33 +21,35 @@ namespace App.Application.Services
 {
     public class AppApplicationService(IHttpContextAccessor httpContextAccessor, UserManager<User> userManager,
         IAppApplicationRepository applicationRepository, IUnitOfWork unitOfWork, ITrainingRepository trainingRepository,
-        IExaminationRepository examinationRepository, IConverter converter, IApplicationSlip applicationSlip) 
+        IExaminationRepository examinationRepository, IConverter converter, IApplicationSlip applicationSlip,
+        IEmailService emailService, IConfiguration configuration, ITokenService tokenService) 
         : IAppApplicationService
     {
         public async Task<ApiResponse<AppApplicationResponseDto>> CreateAsync(CreateAppApplicationRequestDto request)
-       {
+        {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var user = await userManager.FindByEmailAsync(loginUser!);
 
+            var serviceFee = (request.IsTraining
+            ? (await trainingRepository.GetTrainingAsync(t => t.Id == request.ServiceId))?.ApplicationFee
+            : (await examinationRepository.GetExaminationAsync(e => e.Id == request.ServiceId))?.ApplicationFee) 
+                ?? throw new InvalidOperationException("Service not found for the provided ServiceId.");
+
+            var appliedFor = await GetApplicationTitleAsync(request);
             var appApplication = new AppApplication
             {
                 Id = Guid.NewGuid(),
                 UserId = user!.Id,
                 User = user,
+                TrainingId = request.IsTraining ? request.ServiceId : Guid.Empty,
+                ExaminationId = request.IsTraining ? Guid.Empty : request.ServiceId,
+                AppliedFor = appliedFor,
+                ApplicationFee = serviceFee,
                 Status = ApplicationStatus.Pending,
-                Date = DateTime.Now,
+                DateApplied = DateTime.Now,
                 CreatedBy = loginUser!,
                 CreatedOn = DateTime.UtcNow
             };
-
-            if (request.ApplicationType == "Training")
-            {
-                await HandleTrainingApplicationAsync(request.ApplicationId, appApplication);
-            }
-            else if (request.ApplicationType == "Examination")
-            {
-                await HandleExaminationApplicationAsync(request.ApplicationId, appApplication);
-            }
 
             await applicationRepository.CreateAsync(appApplication);
             await unitOfWork.SaveAsync();
@@ -58,33 +62,19 @@ namespace App.Application.Services
                 {
                     Id = appApplication.Id,
                     ApplicantFullName = $"{user.FirstName} {user.LastName}",
-                    ApplicationPurpose = appApplication.ApplicationPurpose,
-                    Date = appApplication.Date,
-                    Status = appApplication.Status
+                    AppliedFor = appliedFor,
+                    Date = appApplication.DateApplied.ToString("D"),
+                    Status = appApplication.Status,
+                    HasPaid = appApplication.HasPaid ? "Yes" : "No"
                 }
             };
         }
 
-        private async Task HandleTrainingApplicationAsync(Guid applicationId, AppApplication appApplication)
-        {
-            var training = await trainingRepository.GetTrainingAsync(tr => tr.Id == applicationId) 
-                        ?? throw new InvalidOperationException("Training not found");
-            appApplication.ApplicationId = applicationId;
-            appApplication.ApplicationPurpose = training.Title;
-        }
-
-        private async Task HandleExaminationApplicationAsync(Guid applicationId, AppApplication appApplication)
-        {
-            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == applicationId) 
-                            ?? throw new InvalidOperationException("Examination not found");
-            appApplication.ApplicationId = applicationId;
-            appApplication.ApplicationPurpose = examination.ExamTitle;
-        }
-
+       
         public async Task<ApiResponse<AppApplicationResponseDto>> DeleteAsync(Guid id)
         {
             var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
-            if (application == null) return new ApiResponse<AppApplicationResponseDto>
+            if (application == null) return new Core.DTOs.Responses.ApiResponse<AppApplicationResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Application Not Found",
@@ -105,7 +95,7 @@ namespace App.Application.Services
         public async Task<ApiResponse<AppApplicationResponseDto>> GetAppApplicationAsync(Guid id)
         {
             var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
-            if (application == null) return new ApiResponse<AppApplicationResponseDto>
+            if (application == null) return new Core.DTOs.Responses.ApiResponse<AppApplicationResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Application Not Found",
@@ -120,9 +110,10 @@ namespace App.Application.Services
                 {
                     Id = application.Id,
                     ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
-                    ApplicationPurpose = application.ApplicationPurpose,
-                    Date = application.Date,
-                    Status = application.Status
+                    AppliedFor = application.AppliedFor,
+                    Date = application.DateApplied.ToString("D"),
+                    Status = application.Status,
+                    HasPaid = application.HasPaid ? "Yes" : "No"
                 }
             };
         }
@@ -147,9 +138,10 @@ namespace App.Application.Services
                 {
                     Id = application.Id,
                     ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
-                    ApplicationPurpose = application.ApplicationPurpose,
-                    Date = application.Date,
-                    Status = application.Status
+                    AppliedFor = application.AppliedFor,
+                    Date = application.DateApplied.ToString("D"),
+                    Status = application.Status,
+                    HasPaid = application.HasPaid ? "Yes" : "No"
                 }).ToList();
 
                 return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
@@ -169,14 +161,13 @@ namespace App.Application.Services
         {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
-            if (application == null) return new ApiResponse<AppApplicationResponseDto>
+            if (application == null) return new Core.DTOs.Responses.ApiResponse<AppApplicationResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Application Not Found",
                 Data = null
             };
 
-            application.ApplicationPurpose = request.ApplicationPurpose ?? application.ApplicationPurpose;
             application.ModifiedBy = loginUser;
             application.ModifiedOn = DateTime.UtcNow;
 
@@ -191,9 +182,10 @@ namespace App.Application.Services
                 {
                     Id = application.Id,
                     ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
-                    ApplicationPurpose = application.ApplicationPurpose,
-                    Date = application.Date,
-                    Status = application.Status
+                    AppliedFor = application.AppliedFor,
+                    Date = application.DateApplied.ToString("D"),
+                    Status = application.Status,
+                    HasPaid = application.HasPaid ? "Yes" : "No"
                 }
             };
         }
@@ -231,6 +223,10 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<AppApplicationResponseDto>> AcceptApplicationAsync(Guid id)
         {
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var admin = await userManager.FindByEmailAsync(loginUser!); 
+                        ArgumentException.ThrowIfNullOrEmpty(loginUser, nameof(loginUser));
+
             var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
             if (application == null) return new ApiResponse<AppApplicationResponseDto>
             {
@@ -238,8 +234,35 @@ namespace App.Application.Services
                 Message = "Application not found"
             };
 
-            application.Status = ApplicationStatus.Accepted;
+            application.Status = ApplicationStatus.Approved;
+            //await HandleTrainingAndExaminationApplicationAsync(application);
             await unitOfWork.SaveAsync();
+
+            var serviceId = application.ExaminationId != Guid.Empty ? application.ExaminationId
+                                : (application.TrainingId != Guid.Empty ? application.TrainingId : Guid.Empty);
+
+            var paymentType = application.ExaminationId != Guid.Empty ? PaymentType.Examination : PaymentType.Training;
+
+            var token = tokenService.GeneratePaymentToken(application.UserId, serviceId, paymentType);
+            string paymentUrl = $"{configuration["AngularUrl"]}/payments/initiate/{serviceId}?paymentType={paymentType}&token={token}";
+            var replacements = new Dictionary<string, string>
+            {
+                { "Applicant", application.User.FirstName + "" + application.User.LastName },
+                { "ApplicationPurpose", application.AppliedFor },
+                { "PaymentUrl", paymentUrl },
+                { "InstituteEmail", configuration["InstituteEmail"]! },
+                { "Sendername", admin!.FirstName + " " + admin.LastName },
+                { "Level", "Admin"}
+            };
+            var receiverEmail = application.User.Email;
+            var receiverName = application.User.FirstName + " " + application.User.LastName;
+
+            emailService.SendEmail(
+                 "ApplicationAcceptanceEmail.html",
+                 replacements, receiverEmail!,
+                 receiverName,
+                 "Your Application Status"
+                 );
 
             return new ApiResponse<AppApplicationResponseDto>
             {
@@ -250,8 +273,12 @@ namespace App.Application.Services
 
         public async Task<ApiResponse<string>> RejectApplicationAsync(Guid id, RejectionApplicationRequestDto request)
         {
+            var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var admin = await userManager.FindByEmailAsync(loginUser!);
+                        ArgumentException.ThrowIfNullOrEmpty(loginUser, nameof(loginUser));
+
             var application = await applicationRepository.GetApplicationAsync(app => app.Id == id);
-            if (application == null) return new ApiResponse<string>
+            if (application == null) return new Core.DTOs.Responses.ApiResponse<string>
             {
                 IsSuccessful = false,
                 Message = "Application not found"
@@ -259,6 +286,27 @@ namespace App.Application.Services
 
             application.Status = ApplicationStatus.Rejected;
             await unitOfWork.SaveAsync();
+            
+            string otherServices = $"{configuration["AngularUrl"]}/services";
+            var replacements = new Dictionary<string, string>
+            {
+                { "Applicant", application.User.FirstName + "" + application.User.LastName },
+                { "ApplicationPurpose", application.AppliedFor },
+                { "RejectionReason", request.RejectionReason },
+                { "InstituteEmail", configuration["InstituteEmail"]! },
+                { "OtherServices", otherServices },
+                { "Sendername", admin!.FirstName + " " + admin.LastName },
+                { "Level", admin.Level!.Name}
+            };
+            var receiverEmail = application.User.Email;
+            var receiverName = application.User.FirstName + " " + application.User.LastName;
+
+            emailService.SendEmail(
+                 "ApplicationRejectionEmail.html",
+                 replacements, receiverEmail!,
+                 receiverName,
+                 "Your Application Status"
+                 );
 
             return new ApiResponse<string>
             {
@@ -278,7 +326,7 @@ namespace App.Application.Services
                                             application.User.FirstName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                                             application.User.LastName.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                                             application.Status.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
-                                            (application.ApplicationPurpose != null && application.ApplicationPurpose.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                                            application.AppliedFor.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
                                         )
                                     )
                                     .ToListAsync();
@@ -317,7 +365,7 @@ namespace App.Application.Services
             int pageNumber = requestPageNumber > 0 ? requestPageNumber : 1;
 
             var totalRecords = applications.Count;
-            var totalPages = (int)Math.Ceiling((double)totalRecords / requestpageSize);
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
             var paginatedData = applications
             .Skip((pageNumber - 1) * pageSize)
@@ -328,9 +376,10 @@ namespace App.Application.Services
             {
                 Id = application.Id,
                 ApplicantFullName = $"{application.User.FirstName} {application.User.LastName}",
-                ApplicationPurpose = application.ApplicationPurpose,
-                Date = application.Date,
-                Status = application.Status
+                AppliedFor = application.AppliedFor,
+                Date = application.DateApplied.ToString("D"),
+                Status = application.Status,
+                HasPaid = application.HasPaid ? "Yes" : "No"
             }).ToList();
 
             return new PagedResponse<IEnumerable<AppApplicationResponseDto>>
@@ -343,6 +392,78 @@ namespace App.Application.Services
                 CurrentPage = pageNumber,
                 Data = responseData
             };
+        }
+
+        //private async Task HandleTrainingAndExaminationApplicationAsync(AppApplication appApplication)
+        //{
+        //    var training = await trainingRepository.GetTrainingAsync(tr => tr.Title == appApplication.ApplicationPurpose);
+        //    if (training != null)
+        //    {
+        //        var userTraining = new UserTrainings
+        //        {
+        //            Id = Guid.NewGuid(),
+        //            TrainingId = training.Id,
+        //            Training = training,
+        //            UserId = appApplication.UserId,
+        //            User = appApplication.User
+        //        };
+        //        training.Trainings.Add(userTraining);
+        //    }
+        //    else
+        //    {
+        //        var examination = await examinationRepository.GetExaminationAsync(e => e.ExamTitle == appApplication.ApplicationPurpose);
+        //        if (examination != null)
+        //        {
+        //            var userExamination = new UserExaminations
+        //            {
+        //                Id = Guid.NewGuid(),
+        //                ExaminationId = examination.Id,
+        //                Examination = examination,
+        //                UserId = appApplication.UserId,
+        //                User = appApplication.User
+        //            };
+        //            examination.Examinations.Add(userExamination);
+        //        }
+        //        else
+        //        {
+        //            throw new InvalidOperationException($"No training or examination found for the purpose: {appApplication.ApplicationPurpose}");
+        //        }
+        //    }
+        //}
+
+        private async Task<string> GetApplicationTitleAsync(CreateAppApplicationRequestDto request)
+        {
+            if (request.IsTraining)
+            {
+                var training = await trainingRepository.GetTrainingAsync(t => t.Id == request.ServiceId);
+                return training?.Title ?? string.Empty;
+            }
+
+            var examination = await examinationRepository.GetExaminationAsync(e => e.Id == request.ServiceId);
+            return examination?.ExamTitle ?? string.Empty;
+        }
+
+        public void ApplicationPaymentNotification(Payment payment, string url)
+        {
+            var replacements = new Dictionary<string, string>
+            {
+                { "Applicant", payment.User.FirstName + " " + payment.User.LastName },
+                { "Amount", payment.Amount.ToString("C2", new System.Globalization.CultureInfo("en-NG")) },
+                { "Service", $"Payment for {payment.PaymentFor}"},
+                { "Date", payment.CreatedOn.ToString("D") },
+                { "ReferenceNo", payment.PaymentRef },
+                { "InstituteEmail", configuration["InstituteEmail"]!},
+                { "PaymentDetail", url },
+                { "Sendername", "Ajala Abdbasit" },
+                { "Level", "Admin" }
+            };
+
+            emailService.SendEmail(
+                 "ApplicationPaymentEmail.html",
+                 replacements, payment.User.Email!,
+                 payment.User.FirstName + " " + payment.User.LastName,
+                 "Application Status"
+                 );
         }
     }
 }

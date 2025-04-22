@@ -26,12 +26,42 @@ namespace App.Infrastructure.Repositories
 
         public async Task<AppApplication> GetApplicationAsync(Expression<Func<AppApplication, bool>> predicate)
         {
-            return await dbContext.Applications.FirstOrDefaultAsync(predicate);
+            var response = await dbContext.Applications
+                         .Include(a => a.User)
+                         .FirstOrDefaultAsync(predicate);
+
+            return response;
+        }
+
+        public async Task<AppApplication> GetApplicationAsync(Guid userId, Guid trainingId, Guid examId)
+        {
+            var response = await dbContext.Applications
+                .FirstOrDefaultAsync(a =>
+                    a.UserId == userId &&
+                    (trainingId != Guid.Empty && a.TrainingId == trainingId ||
+                     examId != Guid.Empty && a.ExaminationId == examId)
+                );
+
+            return response;
+        }
+
+        public async Task<bool> HasPaidAsync(Guid userId, Guid trainingId, Guid examId)
+        {
+            var application = await dbContext.Applications
+                .FirstOrDefaultAsync(a =>
+                    a.UserId == userId &&
+                    (trainingId != Guid.Empty && a.TrainingId == trainingId ||
+                     examId != Guid.Empty && a.ExaminationId == examId)
+                );
+
+            return application != null && application.HasPaid;
         }
 
         public IQueryable<AppApplication> GetApplicationsAsync()
         {
-            return dbContext.Applications.AsQueryable();
+            return dbContext.Applications
+                   .Include(a => a.User)
+                   .AsQueryable();
         }
 
         public IQueryable<AppApplication> GetApplicationsAsync(User user)

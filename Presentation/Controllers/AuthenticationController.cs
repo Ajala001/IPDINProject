@@ -22,7 +22,7 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> SignInAsync([FromBody] SignInRequestDto request)
         {
             var result = await sender.Send(new SignInCommand(request));
-            if (!result.IsSuccessful) return BadRequest(result);
+            if (!result.IsSuccessful) return Unauthorized(result);
             return Ok(result);
         }
 
@@ -70,6 +70,15 @@ namespace App.Presentation.Controllers
         {
             if (!ModelState.IsValid) return BadRequest("Something went wrong");
             var result = await sender.Send(new ResetPasswordCommand(request));
+            if (result.IsSuccessful) return Ok(result);
+            return BadRequest(result);
+        }
+
+        [HttpPost("changePassword")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest("Something went wrong");
+            var result = await sender.Send(new ChangePasswordCommand(request));
             if (result.IsSuccessful) return Ok(result);
             return BadRequest(result);
         }

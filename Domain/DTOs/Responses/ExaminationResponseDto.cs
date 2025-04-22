@@ -12,6 +12,7 @@ namespace App.Core.DTOs.Responses
         public short ExamYear { get; set; }
         public ExaminationStatus Status { get; set; }
         public string Fee { get; set; } = null!;
+        public string ApplicationFee { get; set; } = null!;
         public ICollection<CourseResponseDto> Courses { get; set; } = new List<CourseResponseDto>();
     }
 }

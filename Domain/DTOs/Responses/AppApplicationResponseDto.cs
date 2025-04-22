@@ -5,9 +5,10 @@ namespace App.Core.DTOs.Responses
     public class AppApplicationResponseDto
     {
         public Guid Id { get; set; }
-        public string ApplicantFullName { get; set; } = null!;
-        public string? ApplicationPurpose { get; set; } // reason for making the application
-        public DateTime Date { get; set; }
+        public string ApplicantFullName { get; set; } = string.Empty;
+        public string AppliedFor { get; set; } = string.Empty;
+        public string Date { get; set; } = string.Empty;
+        public string HasPaid { get; set; } = string.Empty;
         public ApplicationStatus Status { get; set; }
     }
 }

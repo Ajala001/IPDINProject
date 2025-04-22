@@ -1,4 +1,6 @@
-﻿using App.Core.DTOs.Requests.SearchRequestDtos;
+﻿using App.Application.IExternalServices;
+using App.Core.DTOs.Requests.CreateRequestDtos;
+using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
@@ -6,14 +8,20 @@ using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using System.Text;
 
 namespace App.Application.Services
 {
     public class UserService(UserManager<User> userManager, IFileRepository fileRepository,
-        IHttpContextAccessor httpContextAccessor, ILevelRepository levelRepository) : IUserService
+        IHttpContextAccessor httpContextAccessor, ILevelRepository levelRepository, IConfiguration configuration, IEmailService emailService,
+        IUnitOfWork unitOfWork, IAcademicQualificationRepository qualificationRepository) : IUserService
     {
+        private static readonly SemaphoreSlim membershipNumberSemaphore = new SemaphoreSlim(1, 1);
         public async Task<ApiResponse<UserResponseDto>> DeleteAsync(string email)
         {
             var user = await userManager.FindByEmailAsync(email);
@@ -66,7 +74,11 @@ namespace App.Application.Services
 
         public async Task<PagedResponse<IEnumerable<UserResponseDto>>> GetUsersAsync(int pageSize, int pageNumber)
         {
-            var users = await userManager.Users.ToListAsync()
+            var users = await userManager.Users
+                   .Include(u => u.UserAcademicQualifications)
+                   .ThenInclude(uaq => uaq.Qualification)
+                   .Include(u => u.Level) // Assuming there's a navigation property for Level
+                   .ToListAsync()
                 ?? throw new Exception("No User Found");
 
             var responseData = new List<UserResponseDto>();
@@ -215,7 +227,12 @@ namespace App.Application.Services
 
         public async Task<PagedResponse<IEnumerable<UserResponseDto>>> SearchUserAsync(SearchQueryRequestDto request)
         {
-            var users = await userManager.Users.ToListAsync();
+            var users = await userManager.Users
+                    .Include(u => u.UserAcademicQualifications)
+                    .ThenInclude(uaq => uaq.Qualification)
+                    .Include(u => u.Level) // Assuming there's a navigation property for Level
+                    .ToListAsync();
+
             var searchedUsers = users.Where(user =>
                 !string.IsNullOrEmpty(request.SearchQuery) &&
                 (
@@ -229,7 +246,7 @@ namespace App.Application.Services
                     user.Country.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                     user.DriverLicenseNo.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                     user.Gender.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase) ||
-                    user.Level.ToString().Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
+                    user.Level!.ToString()!.Contains(request.SearchQuery, StringComparison.OrdinalIgnoreCase)
                 )
             ).ToList();
 
@@ -271,6 +288,149 @@ namespace App.Application.Services
                 CurrentPage = pageNumber,
                 Data = paginatedResponseData
             };
+        }
+
+        public async Task<ApiResponse<UserResponseDto>> AddAdminAsync(AddAdminDto addAdminDto)
+        {
+            var existingUser = await userManager.FindByEmailAsync(addAdminDto.Email);
+            if (existingUser != null)
+            {
+                return new ApiResponse<UserResponseDto>
+                {
+                    IsSuccessful = false,
+                    Message = $"User with email {existingUser.Email} already exists"
+                };
+            }
+
+            using (var transaction = await unitOfWork.BeginTransactionAsync())
+            {
+                try
+                {
+                    var newUser = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        FirstName = addAdminDto.FirstName,
+                        LastName = addAdminDto.LastName,
+                        Email = addAdminDto.Email,
+                        UserName = addAdminDto.Email,
+                        LevelId = addAdminDto.LevelId,
+                        Gender = addAdminDto.Gender,
+                        StateOfResidence = addAdminDto.StateOfResidence,
+                        Country = addAdminDto.Country,
+                        DriverLicenseNo = addAdminDto.DriverLicenseNo,
+                        YearsOfExperience = addAdminDto.YearsOfExperience,
+                        NameOfCurrentDrivingSchool = addAdminDto.NameOfCurrentDrivingSchool,
+                        CreatedBy = addAdminDto.Email,
+                        CreatedOn = DateTime.Now
+                    };
+
+                    var result = await userManager.CreateAsync(newUser, "Admin@01");
+                    if (!result.Succeeded)
+                    {
+                        throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
+                    }
+
+                    // Add qualifications logic
+                    foreach (var qualificationDto in addAdminDto.AcademicQualifications)
+                    {
+                        var qualification = new AcademicQualification
+                        {
+                            Id = Guid.NewGuid(),
+                            Degree = qualificationDto.Degree,
+                            FieldOfStudy = qualificationDto.FieldOfStudy,
+                            Institution = qualificationDto.Institution,
+                            YearAttained = qualificationDto.YearAttained,
+                            CreatedBy = newUser.Email,
+                            CreatedOn = DateTime.Now
+                        };
+                        await qualificationRepository.CreateAsync(qualification);
+
+                        newUser.UserAcademicQualifications.Add(new UserAcademicQualifications
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = newUser.Id,
+                            QualificationId = qualification.Id,
+                            User = newUser,
+                            Qualification = qualification
+                        });
+                    }
+
+                    await unitOfWork.SaveAsync();
+                    await transaction.CommitAsync();
+
+                    await AssignRoleAndSendConfirmationEmailAsync(newUser, "Admin");
+
+                    return new ApiResponse<UserResponseDto>
+                    {
+                        IsSuccessful = true,
+                        Message = "Registration successful and a confirmation email sent to you"
+                    };
+                }
+                catch (Exception ex)
+                {
+                    if (transaction.GetDbTransaction().Connection != null)
+                    {
+                        await transaction.RollbackAsync();
+                    }
+                    return new ApiResponse<UserResponseDto>
+                    {
+                        IsSuccessful = false,
+                        Message = $"Registration failed due to an error: {ex.Message}"
+                    };
+                }
+            }
+        }
+
+
+        private async Task AssignRoleAndSendConfirmationEmailAsync(User user, string role)
+        {
+            await userManager.AddToRoleAsync(user, role);
+            var confirmEmailToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
+            var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
+
+            string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
+            string userFullName = $"{user.FirstName} {user.LastName}";
+
+            var replacements = new Dictionary<string, string>
+            {
+                { "UserName", userFullName },
+                { "AppName", "IPDIN Driving Institute" },
+                { "ConfirmationLink", url },
+                { "MembershipNo", user.MembershipNumber! },
+                { "Password", configuration["AdminDefaultPass"]! }
+            };
+
+            var membershipNum = await GenerateMembershipNumberAsync();
+            user.MembershipNumber = membershipNum;
+            await userManager.UpdateAsync(user);
+            await unitOfWork.SaveAsync();
+
+            emailService.SendEmail(
+                "AdminConfirmationEmail.html", 
+                replacements, user.Email!, 
+                userFullName, "Confirm Your Email"
+                );
+        }
+
+        private async Task<string> GenerateMembershipNumberAsync()
+        {
+            await membershipNumberSemaphore.WaitAsync();
+            try
+            {
+                // Fetch the list of users in the "Admin" role
+                var adminUsers = await userManager.GetUsersInRoleAsync("Admin");
+                int adminCount = adminUsers.Count + 1; // New admin's number is count + 1
+
+                string year = DateTime.Now.Year.ToString();
+                string uniqueId = adminCount.ToString("D4"); // Zero-padded four-digit unique ID
+
+                return $"ADM/{year}/{uniqueId}";
+            }
+            finally
+            {
+                membershipNumberSemaphore.Release();
+            }
         }
     }
 }

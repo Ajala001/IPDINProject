@@ -2,6 +2,7 @@
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
+using App.Core.Entities;
 
 namespace App.Core.Interfaces.Services
 {
@@ -17,5 +18,6 @@ namespace App.Core.Interfaces.Services
         Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> SearchApplicationAsync(SearchQueryRequestDto request);
         Task<ApiResponse<string>> RejectApplicationAsync(Guid id, RejectionApplicationRequestDto request);
         Task<ApiResponse<byte[]>> GenerateApplicationSlipAsync(Guid applicationId);
+        void ApplicationPaymentNotification(Payment payment, string url);
     }
 }

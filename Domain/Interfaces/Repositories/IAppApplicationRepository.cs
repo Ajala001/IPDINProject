@@ -11,6 +11,7 @@ namespace App.Core.Interfaces.Repositories
         void DeleteAll(List<AppApplication> applications);
         IQueryable<AppApplication> GetApplicationsAsync();
         IQueryable<AppApplication> GetApplicationsAsync(User user);
+        Task<AppApplication> GetApplicationAsync(Guid userId, Guid trainingId, Guid examId);
         Task<AppApplication> GetApplicationAsync(Expression<Func<AppApplication, bool>> predicate);
 
 

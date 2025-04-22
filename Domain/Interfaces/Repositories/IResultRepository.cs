@@ -10,6 +10,7 @@ namespace App.Core.Interfaces.Repositories
         void Delete(Result result);
         Task<IEnumerable<Result>> GetResultsAsync();
         Task<IEnumerable<Result>> GetResultsAsync(User user);
+        Task<IEnumerable<Result>> GetResultsAsync(BatchResult batchResult);
         Task<Result> GetResultAsync(Expression<Func<Result, bool>> predicate);
     }
 }

@@ -1,12 +1,11 @@
 ﻿using App.Core.DTOs.Requests.CreateRequestDtos;
-using System.Net.Mail;
 
 namespace App.Application.IExternalServices
 {
     public interface IEmailService
     {
-        MailMessage CreateMailMessage(MailRequestDto request);
-        void SendEmail(MailMessage mailMessage);
-        string CreateBody(string userName, string appName, string confimationLink, string membershipNo);
+        string CreateBody(string templateFileName, Dictionary<string, string> replacements);
+        void SendEmail(string templateName, Dictionary<string, string> replacements, 
+                        string receiverEmail, string receiverName, string subject);
     }
 }

@@ -4,11 +4,12 @@ using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Presentation.Controllers
 {
-    //[Authorize(Policy = "PaidDuesOnly", Roles = "Admin, Member")]
+    [Authorize(Policy = "PaidDuesOnly", Roles = "Admin, Member")]
     [Route("api/applications")]
     [ApiController]
     public class ApplicationController(ISender sender) : ControllerBase

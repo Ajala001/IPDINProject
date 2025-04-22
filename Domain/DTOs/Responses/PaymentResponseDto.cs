@@ -9,7 +9,7 @@ namespace App.Core.DTOs.Responses
         public required decimal Amount { get; set; }
         public required string PaymentRef { get; set; }
         public required string PaymentFor { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public string CreatedAt { get; set; } = null!;
         public PaymentStatus Status { get; set; }
     }
 }

@@ -2,7 +2,7 @@
 {
     public class CreateAppApplicationRequestDto
     {
-        public Guid ApplicationId { get; set; } 
-        public string ApplicationType { get; set; } = String.Empty;  //Training, Examination
+        public Guid ServiceId { get; set; }
+        public bool IsTraining { get; set; }
     }
 }

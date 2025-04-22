@@ -6,7 +6,7 @@ namespace App.Core.DTOs.Requests.CreateRequestDtos
     {
         public required string Title { get; set; }
         public string? Description { get; set; }
-        public required int Fee { get; set; }
+        public required decimal Fee { get; set; }
         public required DateTime StartingDateAndTime { get; set; }
         public required DateTime EndingDateAndTime { get; set; }
         public required DateTime RegistrationDeadline { get; set; }

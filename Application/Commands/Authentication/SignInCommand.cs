@@ -2,20 +2,14 @@
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Responses;
 using MediatR;
-using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace App.Application.Commands.Authentication
 {
-    public record SignInCommand(SignInRequestDto SignInRequest) : IRequest<ApiResponse<string>>;
+    public record SignInCommand(SignInRequestDto SignInRequest) : IRequest<ApiResponse<AuthResponse>>;
 
-    public class SignInCommandHandler(IAuthService authService) : IRequestHandler<SignInCommand, ApiResponse<string>>
+    public class SignInCommandHandler(IAuthService authService) : IRequestHandler<SignInCommand, ApiResponse<AuthResponse>>
     {
-        public Task<ApiResponse<string>> Handle(SignInCommand request, CancellationToken cancellationToken)
+        public Task<ApiResponse<AuthResponse>> Handle(SignInCommand request, CancellationToken cancellationToken)
         {
             return authService.SignInAsync(request.SignInRequest);
         }

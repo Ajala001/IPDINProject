@@ -64,10 +64,11 @@ namespace App.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid>("ApplicationId")
-                        .HasColumnType("char(36)");
+                    b.Property<decimal>("ApplicationFee")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("ApplicationPurpose")
+                    b.Property<string>("AppliedFor")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("CreatedBy")
@@ -77,8 +78,14 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime>("DateApplied")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("ExaminationId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("HasPaid")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
@@ -88,6 +95,9 @@ namespace App.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<Guid>("TrainingId")
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
@@ -177,6 +187,9 @@ namespace App.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<decimal>("ApplicationFee")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("CreatedBy")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -194,8 +207,11 @@ namespace App.Infrastructure.Migrations
                     b.Property<short>("ExamYear")
                         .HasColumnType("smallint");
 
-                    b.Property<int>("Fee")
-                        .HasColumnType("int");
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("Haspaid")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
@@ -264,13 +280,19 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("PaymentFor")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<string>("PaymentRef")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("ReasonForPayment")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int>("PaymentType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("char(36)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -337,6 +359,9 @@ namespace App.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<decimal>("ApplicationFee")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
 
@@ -359,8 +384,11 @@ namespace App.Infrastructure.Migrations
                     b.Property<DateTime>("EndingDateAndTime")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("Fee")
-                        .HasColumnType("int");
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("Haspaid")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("longtext");
@@ -488,6 +516,13 @@ namespace App.Infrastructure.Migrations
 
                     b.Property<string>("ProfilePic")
                         .HasColumnType("longtext");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("longtext");

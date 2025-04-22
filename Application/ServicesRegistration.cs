@@ -27,6 +27,9 @@ namespace App.Application
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ILevelService, LevelService>();
             services.AddScoped<IApplicationSlip, ApplicationSlip>();
+            services.AddScoped<IResultFormat, ResultFormat>();
+            services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<ITokenService, TokenService>();
 
             services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
             services.AddHostedService<TrainingStatusUpdaterService>();

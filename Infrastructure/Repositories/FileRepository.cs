@@ -27,7 +27,7 @@ namespace App.Infrastructure.Repositories
                     {
                         await file.CopyToAsync(fileStream);
                     }
-                    var relativePath = $"/uploads/{newFileName}";
+                    var relativePath = $"uploads/{newFileName}".TrimStart('/');
                     return $"{request.Scheme}://{request.Host}/{relativePath}";
                 }
                 catch (Exception ex)

@@ -46,6 +46,7 @@ namespace App.Application.Services
                 ExamDateAndTime = request.ExamDateAndTime,
                 ExamYear = request.ExamYear,
                 Fee = request.Fee,
+                ApplicationFee = request.Fee * 0.1m,
                 Status = request.Status,
                 Courses = courses,
                 CreatedBy = loginUser!,
@@ -67,6 +68,7 @@ namespace App.Application.Services
                     ExamYear = newExamination.ExamYear,
                     Status = newExamination.Status,
                     Fee = newExamination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = newExamination.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = newExamination.Courses.Select(c => new CourseResponseDto
                     {
                         Id = c.Id,
@@ -123,6 +125,7 @@ namespace App.Application.Services
                     ExamYear = examination.ExamYear,
                     Status = examination.Status,
                     Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = examination.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = examination.Courses.Select(c => new CourseResponseDto
                     {
                         Id = c.Id,
@@ -224,6 +227,7 @@ namespace App.Application.Services
                     ExamYear = examination.ExamYear,
                     Status = examination.Status,
                     Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                    ApplicationFee = examination.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                     Courses = examination.Courses.Select(c => new CourseResponseDto
                     {
                         Id = c.Id,
@@ -270,6 +274,7 @@ namespace App.Application.Services
                         ExamYear = examination.ExamYear,
                         Status = examination.Status,
                         Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                        ApplicationFee = examination.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                         Courses = examination.Courses.Select(c => new CourseResponseDto
                         {
                             Id = c.Id,
@@ -319,6 +324,7 @@ namespace App.Application.Services
                 ExamYear = examination.ExamYear,
                 Status = examination.Status,
                 Fee = examination.Fee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
+                ApplicationFee = examination.ApplicationFee.ToString("C2", new System.Globalization.CultureInfo("en-NG")),
                 Courses = examination.Courses.Select(c => new CourseResponseDto
                 {
                     Id = c.Id,

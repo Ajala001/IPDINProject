@@ -1,6 +1,6 @@
 ﻿using App.Application.Commands.User;
-using App.Application.Queries.Course;
 using App.Application.Queries.User;
+using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using MediatR;
@@ -18,6 +18,15 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> GetAllUserAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
         {
             var result = await sender.Send(new GetAllUserQuery(pageSize, pageNumber));
+            if (!result.IsSuccessful) return NotFound(result);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin")]
+        public async Task<IActionResult> AddAdminAsync(AddAdminDto addAdminDto)
+        {
+            var result = await sender.Send(new AddAdminCommand(addAdminDto));
             if (!result.IsSuccessful) return NotFound(result);
             return Ok(result);
         }

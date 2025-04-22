@@ -1,6 +1,7 @@
 ﻿using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
+using App.Core.Enums;
 using App.Core.Interfaces.Repositories;
 using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
@@ -53,15 +54,21 @@ namespace App.Application.Services
                 {
                     Id = batchResult.Id,
                     ExamTitle = batchResult.Examination.ExamTitle,
+                    ExamId = batchResult.ExaminationId,
                     UploadDate = batchResult.CreatedOn.ToLongDateString(),
                     TotalStudents = batchResult.Results.Count,
                     StudentResults = batchResult.Results.Select(r => new StudentResultResponseDto
                     {
                         Id = r.Id,
+                        BatchId = batchResult.Id,
                         FullName = $"{r.User.FirstName} {r.User.LastName}",
+                        ExamId = r.BatchResult.ExaminationId,
+                        Email = r.User.Email!,
                         TotalScore = r.TotalScore,
                         Breakdown = r.Breakdown,
-                        ExamTitle = r.BatchResult.Examination.ExamTitle,
+                        PhoneNumber = r.User.PhoneNumber!,
+                        MembershipNumber = r.User.MembershipNumber!,
+                        ProfilePic = r.User.ProfilePic!
                     }).ToList()
                 }
             };
@@ -83,15 +90,21 @@ namespace App.Application.Services
                 {
                     Id = br.Id,
                     ExamTitle = br.Examination.ExamTitle,
+                    ExamId = br.ExaminationId,
                     UploadDate = br.CreatedOn.ToLongDateString(),
                     TotalStudents = br.Results.Count,
                     StudentResults = br.Results.Select(r => new StudentResultResponseDto
                     {
                         Id = r.Id,
+                        BatchId = br.Id,
                         FullName = $"{r.User.FirstName} {r.User.LastName}",
+                        ExamId = r.BatchResult.ExaminationId,
+                        Email = r.User.Email!,
                         TotalScore = r.TotalScore,
                         Breakdown = r.Breakdown,
-                        ExamTitle = r.BatchResult.Examination.ExamTitle,
+                        PhoneNumber = r.User.PhoneNumber!,
+                        MembershipNumber = r.User.MembershipNumber!,
+                        ProfilePic = r.User.ProfilePic!
                     }).ToList()
                 }).ToList();
 
@@ -133,15 +146,21 @@ namespace App.Application.Services
             {
                 Id = br.Id,
                 ExamTitle = br.Examination.ExamTitle,
+                ExamId = br.ExaminationId,
                 UploadDate = br.CreatedOn.ToLongDateString(),
                 TotalStudents = br.Results.Count,
                 StudentResults = br.Results.Select(r => new StudentResultResponseDto
                 {
                     Id = r.Id,
+                    BatchId = br.Id,
+                    ExamId = r.BatchResult.ExaminationId,
                     FullName = $"{r.User.FirstName} {r.User.LastName}",
+                    Email = r.User.Email!,
                     TotalScore = r.TotalScore,
                     Breakdown = r.Breakdown,
-                    ExamTitle = r.BatchResult.Examination.ExamTitle,
+                    PhoneNumber = r.User.PhoneNumber!,
+                    MembershipNumber = r.User.MembershipNumber!,
+                    ProfilePic = r.User.ProfilePic!
                 }).ToList()
             }).ToList();
 
@@ -192,6 +211,7 @@ namespace App.Application.Services
             {
                 Id = Guid.NewGuid(),
                 ExamTitle = examination.ExamTitle,
+                ExamId = examination.Id,
                 UploadDate = DateTime.Now.ToLongDateString()
             };
 
@@ -300,10 +320,15 @@ namespace App.Application.Services
                         bulkResultResponse.StudentResults.Add(new StudentResultResponseDto
                         {
                             Id = result.Id,
+                            BatchId = batchResult.Id,
+                            ExamId = result.BatchResult.ExaminationId,
                             FullName = $"{user.FirstName} {user.LastName}",
+                            Email = user.Email!,
                             TotalScore = result.TotalScore,
                             Breakdown = result.Breakdown,
-                            ExamTitle = examination.ExamTitle,
+                            PhoneNumber = user.PhoneNumber!,
+                            MembershipNumber = user.MembershipNumber!,
+                            ProfilePic = user.ProfilePic!
                         });
 
                         logger.LogInformation("Result added for user {FullName} and examination {ExamTitle}", $"{user.FirstName} {user.LastName}", examination.ExamTitle);
@@ -315,12 +340,18 @@ namespace App.Application.Services
             await batchResultRepository.UploadBatchResultAsync(batchResult);
             bulkResultResponse.TotalStudents = batchResult.Results.Count;
             var response = await unitOfWork.SaveAsync();
-            if(response > 0) return new ApiResponse<BulkResultResponseDto>
+            if (response > 0)
             {
-                IsSuccessful = true,
-                Message = "Results Uploaded Successfully",
-                Data = bulkResultResponse
-            };
+                examination.Status = ExaminationStatus.Unavailable;
+                examinationRepository.Update(examination);
+                await unitOfWork.SaveAsync();
+                return new ApiResponse<BulkResultResponseDto>
+                {
+                    IsSuccessful = true,
+                    Message = "Results Uploaded Successfully",
+                    Data = bulkResultResponse
+                };
+            }
 
             return new ApiResponse<BulkResultResponseDto>
             {
@@ -343,7 +374,6 @@ namespace App.Application.Services
                 return false;
             }
         }
-
 
         public async Task<PagedResponse<IEnumerable<BulkResultResponseDto>>> SearchBatchResultAsync(SearchQueryRequestDto request)
         {
@@ -378,15 +408,21 @@ namespace App.Application.Services
 
                 Id = br.Id,
                 ExamTitle = br.Examination.ExamTitle,
+                ExamId = br.ExaminationId,
                 UploadDate = br.CreatedOn.ToLongDateString(),
                 TotalStudents = br.Results.Count,
                 StudentResults = br.Results.Select(r => new StudentResultResponseDto
                 {
                     Id = r.Id,
                     FullName = $"{r.User.FirstName} {r.User.LastName}",
+                    BatchId = br.Id,
+                    ExamId = r.BatchResult.ExaminationId,
+                    Email = r.User.Email!,
                     TotalScore = r.TotalScore,
                     Breakdown = r.Breakdown,
-                    ExamTitle = r.BatchResult.Examination.ExamTitle,
+                    PhoneNumber = r.User.PhoneNumber!,
+                    MembershipNumber = r.User.MembershipNumber!,
+                    ProfilePic = r.User.ProfilePic!
                 }).ToList()
             }).ToList();
 

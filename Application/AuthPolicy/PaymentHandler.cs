@@ -11,7 +11,7 @@ namespace App.Application.AuthPolicy
     {
         protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PaymentRequirement requirement)
         {
-            if (!context.User.Identity.IsAuthenticated)
+            if (!context.User.Identity!.IsAuthenticated)
             {
                 context.Fail();
                 return;

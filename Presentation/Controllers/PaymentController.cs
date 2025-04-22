@@ -4,6 +4,7 @@ using App.Application.Queries.Payment;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
+using App.Core.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ namespace App.Presentation.Controllers
     [Authorize(Roles = "Admin, Member")]
     [Route("api/payments")]
     [ApiController]
-    public class PaymentController(ISender sender) : ControllerBase
+    public class PaymentController(ISender sender, ITokenService tokenService) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> GetAllPaymentAsync([FromQuery] int pageSize, [FromQuery] int pageNumber)
@@ -66,7 +67,19 @@ namespace App.Presentation.Controllers
             return BadRequest(result);
         }
 
-        
+        [HttpGet("details")]
+        public async Task<IActionResult> GetPaymentDetails([FromQuery] string token)
+        {
+            if (string.IsNullOrEmpty(token) || !tokenService.ValidateToken(token, out string refNo))
+            {
+                return Unauthorized(new { message = "Invalid or expired token" });
+            }
+
+            var result = await sender.Send(new GetPaymentByRefNoQuery(refNo));
+            if (result.IsSuccessful) return Ok(result);
+            return BadRequest(result);
+        }
+
         [HttpDelete("{referenceNo}")]
         public async Task<IActionResult> DeletePaymentAsync([FromRoute] string referenceNo)
         {
@@ -83,5 +96,6 @@ namespace App.Presentation.Controllers
             if (result.IsSuccessful) return Ok(result);
             return BadRequest(result);
         }
+
     }
 }

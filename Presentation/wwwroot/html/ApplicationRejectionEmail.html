@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Status Update</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .email-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+            .content p {
+                line-height: 1.6;
+                font-size: 16px;
+            }
+
+        .cta {
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+            .cta:hover {
+                background-color: #0056b3;
+            }
+
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+            margin-top: 30px;
+        }
+
+            .footer a {
+                color: #007bff;
+                text-decoration: none;
+            }
+
+                .footer a:hover {
+                    text-decoration: underline;
+                }
+    </style>
+</head>
+<body>
+
+    <div class="email-container">
+        <div class="header">
+            Application Status Update
+        </div>
+
+        <div class="content">
+            <p>Dear {{Applicant}},</p>
+
+            <p>Thank you for submitting your application for {{ApplicationPurpose}}. After careful consideration, we regret to inform you that we are unable to proceed with your application at this time.</p>
+
+            <p>This decision was not an easy one, as we received a high volume of outstanding applications. Unfortunately, due to {{RejectionReason}}, we were unable to include everyone this time.</p>
+
+            <p>We deeply value your interest in IPDIN Driving Institute, and we encourage you to reapply in the future or explore other opportunities with us. If you would like feedback on your application or assistance in exploring other programs, feel free to contact us at {{InstituteEmail}}.</p>
+
+            <p>We sincerely wish you the best in your future endeavors and hope our paths cross again.</p>
+
+            <a href="{{OtherServices}}" class="cta">Explore Other Opportunities</a>
+        </div>
+
+        <div class="footer">
+            <p>Kind regards,</p>
+            <p>{{Sendername}} | {{Level}}</p>
+            <p>IPDIN Driving Institute</p>
+            <p>Contact us: 08134466568</p>
+            <p><a href="mailto:{{InstituteEmail}}">Email us</a> for any inquiries.</p>
+        </div>
+    </div>
+
+</body>
+</html>

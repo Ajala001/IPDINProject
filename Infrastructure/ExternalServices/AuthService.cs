@@ -1,22 +1,25 @@
 ﻿using App.Application.IExternalServices;
+using App.Application.Services;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Responses;
 using App.Core.Entities;
 using App.Core.Interfaces.Repositories;
+using App.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace App.Infrastructure.ExternalServices
 {
-    public class AuthService(UserManager<User> userManager, SignInManager<User> signInManager, IAcademicQualificationRepository qualificationRepository,
-        IConfiguration configuration, IEmailService emailService, IUnitOfWork unitOfWork, ILevelRepository levelRepository) : IAuthService
+    public class AuthService(UserManager<User> userManager, SignInManager<User> signInManager, IUnitOfWork unitOfWork,
+        IAcademicQualificationRepository qualificationRepository, IConfiguration configuration, IHttpContextAccessor contextAccessor,
+        IEmailService emailService, ILevelRepository levelRepository, ITokenService tokenService) : IAuthService
     {
+        private static readonly SemaphoreSlim membershipNumberSemaphore = new SemaphoreSlim(1, 1);
         public async Task<ApiResponse<UserResponseDto>> SignUpAsync(SignUpRequestDto request)
         {
             var existingUser = await userManager.FindByEmailAsync(request.Email);
@@ -27,6 +30,12 @@ namespace App.Infrastructure.ExternalServices
             };
 
             var level = await levelRepository.GetLevelAsync(l => l.Id == request.LevelId);
+            if (level == null) return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Specified level does not exist."
+            };
+
             using (var transaction = await unitOfWork.BeginTransactionAsync())
             {
                 try
@@ -111,42 +120,40 @@ namespace App.Infrastructure.ExternalServices
         }
 
 
-
-
-        public async Task<ApiResponse<string>> SignInAsync(SignInRequestDto request)
+        public async Task<ApiResponse<AuthResponse>> SignInAsync(SignInRequestDto request)
         {
             var user = await userManager.Users.FirstOrDefaultAsync(u => u.MembershipNumber == request.MembershipNumber);
-            if (user == null) return new ApiResponse<string>
-            {
-                IsSuccessful = false,
-                Message = $"User with {request.MembershipNumber} does not exist"
-            };
+            if (user == null || !await userManager.CheckPasswordAsync(user, request.Password))
+                return new ApiResponse<AuthResponse> { IsSuccessful = false, Message = "Invalid credentials. Please check your membership number and password." };
 
-            if (!user.EmailConfirmed) return new ApiResponse<string>
+
+            if (!user.EmailConfirmed) return new ApiResponse<AuthResponse>
             {
                 IsSuccessful = false,
                 Message = "Please confirm your email before signing in"
             };
 
-            var result = await signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, false);
-            if (!result.Succeeded) return new ApiResponse<string>
-            {
-                IsSuccessful = false,
-                Message = "Invalid credentials. Please check your membership number and password."
-            };
-
-            return new ApiResponse<string>
+            var accessToken = await tokenService.GenerateAccessToken(user);
+            return new ApiResponse<AuthResponse>
             {
                 IsSuccessful = true,
                 Message = "You have Successfully Signed in",
-                Data = await GenerateToken(user)
+                Data = new AuthResponse
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = null!
+                }
             };
         }
 
-
-        public async Task SignOutAsync()
+        public async Task<ApiResponse<string>> SignOutAsync()
         {
             await signInManager.SignOutAsync();
+            return new ApiResponse<string>
+            {
+                IsSuccessful = true,
+                Message = "Logged out successfully."
+            };
         }
 
         public async Task<ApiResponse<UserResponseDto>> ConfirmEmailAsync(string email, string token)
@@ -163,7 +170,7 @@ namespace App.Infrastructure.ExternalServices
             string normalToken = Encoding.UTF8.GetString(decodedToken);
 
             var result = await userManager.ConfirmEmailAsync(user, normalToken);
-            if(result.Succeeded) return new ApiResponse<UserResponseDto>
+            if (result.Succeeded) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = true,
                 Message = "Email Confirmation Successful"
@@ -193,13 +200,20 @@ namespace App.Infrastructure.ExternalServices
             var validToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
             string url = $"{configuration["AngularUrl"]}/reset-password?email={email}&token={validToken}";
 
-            var mailRequestDto = new MailRequestDto
+            var replacements = new Dictionary<string, string>
             {
-                ToEmail = email,
-                Subject = "Reset Your Password",
-                Body = "<h1>Follow the instructions to Reset Your Password</h1>" + "<p>To reset your password: <a href=\"" + url + "\">Click Here</a></p>"
+                { "UserName", user.FirstName + " " + user.LastName },
+                { "AppName", "IPDIN Driving Institute" },
+                { "ConfirmationLink", url },
+                { "MembershipNo", user.MembershipNumber! }
             };
-            emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
+
+            emailService.SendEmail(
+                 "ResetPasswordEmail.html",
+                 replacements, user.Email!,
+                 user.FirstName + " " + user.LastName,
+                 "Reset Your Password"
+                 );
 
             return new ApiResponse<UserResponseDto>
             {
@@ -211,7 +225,7 @@ namespace App.Infrastructure.ExternalServices
 
         public async Task<ApiResponse<UserResponseDto>> ResetPasswordAsync(ResetPasswordRequestDto request)
         {
-            var user = await userManager.FindByEmailAsync(request.Email);
+            var user = await userManager.FindByEmailAsync(request.Email!);
             if (user == null) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = false,
@@ -219,7 +233,7 @@ namespace App.Infrastructure.ExternalServices
                 Data = null
             };
 
-            if(request.NewPassword != request.ConfirmPassword) return new ApiResponse<UserResponseDto>
+            if (request.NewPassword != request.ConfirmPassword) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = false,
                 Message = "Password does not match"
@@ -227,8 +241,9 @@ namespace App.Infrastructure.ExternalServices
 
             var decodedToken = WebEncoders.Base64UrlDecode(request.Token);
             string normalToken = Encoding.UTF8.GetString(decodedToken);
-            var result = await userManager.ResetPasswordAsync(user, normalToken, request.NewPassword); 
-            if(result.Succeeded) return new ApiResponse<UserResponseDto>
+            var result = await userManager.ResetPasswordAsync(user, normalToken, request.NewPassword!);
+
+            if (result.Succeeded) return new ApiResponse<UserResponseDto>
             {
                 IsSuccessful = true,
                 Message = "Password reset successful"
@@ -242,44 +257,23 @@ namespace App.Infrastructure.ExternalServices
         }
 
 
-        private async Task<string> GenerateToken(User user)
-        {
-            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
-            var credential = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-
-            var roles = await userManager.GetRolesAsync(user);
-            var userLevel = await levelRepository.GetLevelAsync(l => l.Id == user.LevelId);
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-                new Claim("Surname", user.LastName),
-                new Claim("GivenName", user.FirstName),
-                new Claim("NameIdentifier", user.UserName),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim("Level", userLevel.Name)
-            };
-            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-
-            var token = new JwtSecurityToken(
-                issuer: configuration["Jwt:ValidIssuer"],
-                audience: configuration["Jwt:ValidAudience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: credential);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         private async Task<string> GenerateMembershipNumberAsync()
         {
-            int userCount = await userManager.Users.CountAsync();
-            userCount++;
-
-            string year = DateTime.Now.Year.ToString();
-            string uniqueId = userCount.ToString("D4");
-            return $"MEM/{year}/{uniqueId}";
+            await membershipNumberSemaphore.WaitAsync();
+            try
+            {
+                int userCount = await userManager.Users.CountAsync();
+                userCount++;
+                string year = DateTime.Now.Year.ToString();
+                string uniqueId = userCount.ToString("D4");
+                return $"MEM/{year}/{uniqueId}";
+            }
+            finally
+            {
+                membershipNumberSemaphore.Release();
+            }
         }
+
 
         public async Task<ApiResponse<string>> ResendEmailConfirmationToken(string email)
         {
@@ -298,7 +292,7 @@ namespace App.Infrastructure.ExternalServices
                 Data = null
             };
 
-            if(await userManager.IsEmailConfirmedAsync(user)) return new ApiResponse<string>
+            if (await userManager.IsEmailConfirmedAsync(user)) return new ApiResponse<string>
             {
                 IsSuccessful = false,
                 Message = "Email already confirmed",
@@ -310,13 +304,21 @@ namespace App.Infrastructure.ExternalServices
             var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
             string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
-            var mailRequestDto = new MailRequestDto
+            var replacements = new Dictionary<string, string>
             {
-                ToEmail = user.Email!,
-                Subject = "Confirm Your Email",
-                Body = "<h1>Welcome to IPDIN</h1>" + "<p>Please confirm your email by <a href=\"" + url + "\">Clicking Here</a></p>"
+                { "UserName", user.FirstName + " " + user.LastName },
+                { "AppName", "IPDIN Driving Institute" },
+                { "ConfirmationLink", url },
+                { "MembershipNo", user.MembershipNumber! }
             };
-            emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
+
+            emailService.SendEmail(
+                 "ResendConfirmationEmail.html",
+                 replacements, user.Email!,
+                 user.FirstName + " " + user.LastName,
+                 "Confirm Your Email"
+                 );
+
             return new ApiResponse<string>
             {
                 IsSuccessful = true,
@@ -334,16 +336,76 @@ namespace App.Infrastructure.ExternalServices
             string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
             string userFullName = $"{user.FirstName} {user.LastName}";
 
+            var replacements = new Dictionary<string, string>
+            {
+                { "UserName", userFullName },
+                { "AppName", "IPDIN Driving Institute" },
+                { "ConfirmationLink", url },
+                { "MembershipNo", user.MembershipNumber! }
+            };
+
             user.MembershipNumber = await GenerateMembershipNumberAsync();
             await userManager.UpdateAsync(user);
             await unitOfWork.SaveAsync();
-            var mailRequestDto = new MailRequestDto
-            {
-                ToEmail = user.Email,
-                Subject = "Confirm Your Email",
-                Body = emailService.CreateBody(userFullName, "IPDIN DrivingSchool", url, user.MembershipNumber)
-            };
-            emailService.SendEmail(emailService.CreateMailMessage(mailRequestDto));
+
+            emailService.SendEmail(
+                "ConfirmationEmailTemplate.html",
+                replacements, user.Email!, userFullName,
+                "Confirm Your Email"
+                );
         }
+
+        public async Task<ApiResponse<UserResponseDto>> ChangePasswordAsync(ChangePasswordRequestDto request)
+        {
+            var user = await userManager.FindByEmailAsync(request.Email!);
+            if (user == null) return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "User not found",
+                Data = null
+            };
+
+            var isPasswordValid = await userManager.CheckPasswordAsync(user, request.CurrentPassword);
+            if (!isPasswordValid) return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "Current password is incorrect"
+            };
+
+            if (request.CurrentPassword == request.NewPassword) return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = false,
+                Message = "New password cannot be the same as the current password"
+            };
+
+            var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (result.Succeeded) return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = true,
+                Message = "Password changed successfully"
+            };
+
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return new ApiResponse<UserResponseDto>
+            {
+                IsSuccessful = false,
+                Message = $"Failed to change password: {errors}"
+            };
+        }
+
+        public async Task<User?> AuthenticateUserAsync(string? token)
+        {
+            var loggedInEmail = contextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
+            if (!string.IsNullOrEmpty(loggedInEmail)) return await userManager.FindByEmailAsync(loggedInEmail);
+
+            if (string.IsNullOrEmpty(token)) return null;
+
+            var (isValid, email) = tokenService.ValidateUserToken(token);
+            return isValid ? await userManager.FindByEmailAsync(email!) : null;
+        }
+        
+
+       
+
     }
 }

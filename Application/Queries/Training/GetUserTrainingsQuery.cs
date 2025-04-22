@@ -7,9 +7,9 @@ namespace App.Application.Queries.Training
     public record GetUserTrainingsQuery(int PageSize, int PageNumber) : IRequest<PagedResponse<IEnumerable<TrainingResponseDto>>>;
 
     public class GetUserTrainingsQueryHandler(ITrainingService trainingService)
-        : IRequestHandler<GetAllTrainingQuery, PagedResponse<IEnumerable<TrainingResponseDto>>>
+        : IRequestHandler<GetUserTrainingsQuery, PagedResponse<IEnumerable<TrainingResponseDto>>>
     {
-        public async Task<PagedResponse<IEnumerable<TrainingResponseDto>>> Handle(GetAllTrainingQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResponse<IEnumerable<TrainingResponseDto>>> Handle(GetUserTrainingsQuery request, CancellationToken cancellationToken)
         {
             return await trainingService.GetUserTainingsAsync(request.PageSize, request.PageNumber);
         }

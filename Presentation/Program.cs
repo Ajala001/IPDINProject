@@ -6,18 +6,28 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 // Add services to the container.
 
+
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-builder.Services.AddPresentation(configuration);
+builder.Services.AddPresentation(configuration, builder.Environment);
 
 var app = builder.Build();
 
-app.UseStaticFiles();
-app.UseCors("AllowSpecificOrigin");
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:4200");
+    }
+});
+
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -28,8 +38,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseCors("AllowAngularApp");
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 
 using (var scope = app.Services.CreateScope())

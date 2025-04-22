@@ -8,7 +8,7 @@ namespace App.Application.HtmlFormat
         public async Task<string> HtmlContent(AppApplication appApplication)
         {
             var fullName = $"{appApplication.User.FirstName} {appApplication.User.LastName}";
-            var examination = await examinationService.GetExaminationAsync(appApplication.ApplicationId);
+            var examination = await examinationService.GetExaminationAsync(appApplication.ExaminationId);
 
             string courseRows = "";
             if (examination?.Data.Courses != null)
@@ -112,7 +112,7 @@ namespace App.Application.HtmlFormat
                     <h1>Examination Slip</h1>
                     <p><strong>Name:</strong> {fullName}</p>
                     <p><strong>Membership Number:</strong> {appApplication.User.MembershipNumber}</p>
-                    <p><strong>Date:</strong> {appApplication.Date:dd/MM/yyyy}</p>
+                    <p><strong>Date:</strong> {appApplication.DateApplied:dd/MM/yyyy}</p>
 
                     <h2>Courses Offered:</h2>
 

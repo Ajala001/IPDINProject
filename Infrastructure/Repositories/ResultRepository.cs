@@ -17,7 +17,12 @@ namespace App.Infrastructure.Repositories
 
         public async Task<Result> GetResultAsync(Expression<Func<Result, bool>> predicate)
         {
-            return await dbContext.Results.FirstOrDefaultAsync(predicate);
+            var result = await dbContext.Results
+                        .Include(r => r.User)
+                        .Include(r => r.BatchResult)
+                        .ThenInclude(br => br.Examination)
+                        .FirstOrDefaultAsync(predicate);
+            return result;
         }
 
         public async Task<IEnumerable<Result>> GetResultsAsync()
@@ -43,6 +48,16 @@ namespace App.Infrastructure.Repositories
                                 .Include(r => r.BatchResult)
                                 .ThenInclude(br => br.Examination)
                                 .Where(r => r.UserId == user.Id)
+                                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Result>> GetResultsAsync(BatchResult batchResult)
+        {
+            return await dbContext.Results
+                                .Include(r => r.User)
+                                .Include(r => r.BatchResult)
+                                .ThenInclude(br => br.Examination)
+                                .Where(r => r.BatchId == batchResult.Id)
                                 .ToListAsync();
         }
 
