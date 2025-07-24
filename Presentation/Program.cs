@@ -1,5 +1,7 @@
+using App.Infrastructure.Data;
 using App.Infrastructure.Persistence;
 using App.Presentation;
+using Microsoft.EntityFrameworkCore;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,13 +20,16 @@ builder.Services.AddPresentation(configuration, builder.Environment);
 
 var app = builder.Build();
 
+var allowedOrigin = app.Environment.IsDevelopment() ? "http://localhost:4200" : "https://yourfrontendurl.onrender.com";
+
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
     {
-        context.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:4200");
+        context.Context.Response.Headers.Append("Access-Control-Allow-Origin", allowedOrigin);
     }
 });
+
 
 
 
@@ -41,7 +46,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("AllowAngularApp");
 app.UseAuthentication();
-app.UseAuthorization(); 
+app.UseAuthorization();
 
 
 using (var scope = app.Services.CreateScope())
@@ -49,15 +54,21 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
+        var db = services.GetRequiredService<IPDINDbContext>();
+        db.Database.Migrate();
+
         var admin = services.GetRequiredService<IdentitySeeder>();
         await admin.SeedAsync();
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding roles and users.");
+        logger.LogError(ex, "An error occurred during migration or seeding.");
     }
 }
+
+
+
 
 
 app.MapControllers();
