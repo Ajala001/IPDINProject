@@ -1,15 +1,17 @@
-# Build stage
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY IPDINProject.API/IPDINProject.API.csproj IPDINProject.API/
-RUN dotnet restore IPDINProject.API/IPDINProject.API.csproj
+# Copy csproj and restore
+COPY Presentation/App.Presentation.csproj Presentation/
+RUN dotnet restore Presentation/App.Presentation.csproj
 
+# Copy everything else and build
 COPY . .
-WORKDIR /src/IPDINProject.API
+WORKDIR /src/Presentation
 RUN dotnet publish -c Release -o /app/publish
 
-# Runtime stage
+# Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
@@ -17,4 +19,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:80
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-ENTRYPOINT ["dotnet", "IPDINProject.API.dll"]
+ENTRYPOINT ["dotnet", "App.Presentation.dll"]
