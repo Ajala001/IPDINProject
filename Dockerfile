@@ -1,21 +1,19 @@
-# Stage 1: Build
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copy csproj and restore
-COPY *.csproj .
-RUN dotnet restore
+COPY IPDINProject.API/IPDINProject.API.csproj IPDINProject.API/
+RUN dotnet restore IPDINProject.API/IPDINProject.API.csproj
 
-# Copy everything else and build
 COPY . .
-RUN dotnet publish -c Release -o /out
+WORKDIR /src/IPDINProject.API
+RUN dotnet publish -c Release -o /app/publish
 
-# Stage 2: Runtime
+# Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=build /out .
+COPY --from=build /app/publish .
 
-# Expose port 80 for HTTP
 ENV ASPNETCORE_URLS=http://+:80
 ENV ASPNETCORE_ENVIRONMENT=Production
 
