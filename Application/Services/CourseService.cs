@@ -14,7 +14,7 @@ namespace App.Application.Services
         ICourseRepository courseRepository, IUnitOfWork unitOfWork) : ICourseService
     {
         public async Task<ApiResponse<CourseResponseDto>> CreateAsync(CreateCourseRequestDto request)
-        {
+          {
             var loginUser = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var course = await courseRepository.GetCourseAsync(c => 
                          c.CourseTitle == request.CourseTitle && 

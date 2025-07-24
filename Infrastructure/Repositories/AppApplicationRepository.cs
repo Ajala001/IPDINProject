@@ -11,7 +11,7 @@ namespace App.Infrastructure.Repositories
         public async Task<AppApplication> CreateAsync(AppApplication application)
         {
             await dbContext.Applications.AddAsync(application);
-            return application; 
+            return application;
         }
 
         public void Delete(AppApplication application)

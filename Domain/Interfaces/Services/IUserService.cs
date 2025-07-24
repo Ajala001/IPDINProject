@@ -2,6 +2,7 @@
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
 using App.Core.DTOs.Responses;
+using App.Core.Entities;
 
 namespace App.Core.Interfaces.Services
 {

@@ -1,52 +1,82 @@
 ﻿using App.Core.Entities;
+using App.Core.Enums;
+using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using System.Text.Json;
+
+
 
 namespace App.Application.AuthPolicy
 {
-    public class PaymentHandler(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor
-        ) : AuthorizationHandler<PaymentRequirement>
+    public class PaymentHandler(
+        UserManager<User> userManager,
+        IHttpContextAccessor httpContextAccessor,
+        ITokenService tokenService,
+        IConfiguration configuration) : AuthorizationHandler<PaymentRequirement>
     {
-        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PaymentRequirement requirement)
+        private readonly UserManager<User> _userManager = userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly ITokenService _tokenService = tokenService;
+        private readonly IConfiguration _configuration = configuration;
+
+        protected override async Task HandleRequirementAsync(
+            AuthorizationHandlerContext context,
+            PaymentRequirement requirement)
         {
-            if (!context.User.Identity!.IsAuthenticated)
+            var httpContext = _httpContextAccessor.HttpContext;
+
+            if (!context.User.Identity?.IsAuthenticated ?? false)
             {
                 context.Fail();
                 return;
             }
 
-            // Retrieve user's email from claims
-            var userEmail = context.User.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(userEmail))
+            var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrWhiteSpace(email))
             {
                 context.Fail();
                 return;
             }
 
-            // Fetch user from the UserManager
-            var user = await userManager.FindByEmailAsync(userEmail);
-
-            // Check if the user has paid dues
-            if (user != null && user.HasPaidDues)
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
             {
-                context.Succeed(requirement); // Grant access if dues are paid
+                context.Fail();
+                return;
             }
-            else
-            {
-                // Access HttpContext and return a 403 Forbidden response if dues are not paid
-                var httpContext = httpContextAccessor.HttpContext;
 
-                if (httpContext != null)
+            if (user.HasPaidDues)
+            {
+                context.Succeed(requirement);
+                return;
+            }
+
+            if (httpContext != null && !httpContext.Response.HasStarted)
+            {
+
+                httpContext.Response.Clear();
+                httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                httpContext.Response.ContentType = "application/json";
+
+                var json = JsonSerializer.Serialize(new
                 {
-                    // Set status code to 403
-                    httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    await httpContext.Response.WriteAsync("User has not paid their dues.");
-                }
+                    message = "Access denied: Dues unpaid. Please proceed to payment.",
+                    code = "DuesNotPaid",
+                    paymentData = new
+                    {
+                        serviceId = Guid.Empty.ToString(),
+                        paymentType = "Dues" 
+                    }
+                });
 
-                context.Fail(); // Deny access if dues are not paid
+                await httpContext.Response.WriteAsync(json);
             }
+
+            context.Fail();
         }
     }
 }

@@ -18,6 +18,7 @@ namespace App.Core.Interfaces.Services
         Task<PagedResponse<IEnumerable<AppApplicationResponseDto>>> SearchApplicationAsync(SearchQueryRequestDto request);
         Task<ApiResponse<string>> RejectApplicationAsync(Guid id, RejectionApplicationRequestDto request);
         Task<ApiResponse<byte[]>> GenerateApplicationSlipAsync(Guid applicationId);
-        void ApplicationPaymentNotification(Payment payment, string url);
+        void ApplicationPaymentConfirmation(Payment payment, string url);
     }
 }
+ 

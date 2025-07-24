@@ -52,7 +52,7 @@ namespace App.Infrastructure.Persistence
                 {
                     Id = Guid.NewGuid(),
                     Name = "Fellow",
-                    Dues = 2000000,
+                    Dues = 2000,
                     CreatedBy = "Admin",
                     CreatedOn = DateTime.Now
                 };

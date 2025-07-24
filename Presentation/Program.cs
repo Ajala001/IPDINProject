@@ -41,8 +41,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("AllowAngularApp");
 app.UseAuthentication();
-app.UseAuthorization();
-
+app.UseAuthorization(); 
 
 
 using (var scope = app.Services.CreateScope())

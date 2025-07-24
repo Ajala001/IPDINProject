@@ -5,18 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Confirmation</title>
     <style type="text/css">
-        /* Ensure full width on mobile devices */
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            width: 100%;
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             -webkit-text-size-adjust: none;
-        }
-
-        table {
-            border-collapse: collapse;
+            width: 100%;
         }
 
         .container {
@@ -24,40 +19,54 @@
             max-width: 600px;
             margin: 0 auto;
             background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .header {
-            padding: 20px;
+            background-color: #1a73e8;
+            padding: 30px 20px;
             text-align: center;
-            background-color: #007bff;
-            color: white;
         }
+
+            .header img {
+                max-width: 120px;
+                margin-bottom: 15px;
+            }
 
             .header h1 {
                 margin: 0;
+                color: #ffffff;
                 font-size: 24px;
             }
 
         .body-content {
-            padding: 20px;
-            text-align: center;
+            padding: 30px 20px;
+            text-align: left;
+            color: #444444;
         }
 
             .body-content p {
                 font-size: 16px;
-                color: #333333;
                 line-height: 1.6;
                 margin-bottom: 20px;
             }
 
+        .highlight {
+            font-weight: bold;
+            color: #1a73e8;
+        }
+
         .button-container {
             text-align: center;
+            margin: 30px 0;
         }
 
         .button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
+            background-color: #1a73e8;
+            color: #ffffff;
+            padding: 12px 25px;
             text-decoration: none;
             font-size: 16px;
             border-radius: 5px;
@@ -65,34 +74,41 @@
         }
 
         .footer {
+            background-color: #f1f3f6;
             padding: 20px;
             text-align: center;
-            background-color: #f4f4f4;
             color: #888888;
-            font-size: 12px;
+            font-size: 13px;
         }
+
+            .footer p {
+                margin: 0;
+            }
     </style>
 </head>
 <body>
     <table class="container" role="presentation" cellpadding="0" cellspacing="0">
         <tr>
             <td class="header">
+                <!-- Replace this src with your actual logo image URL -->
+                <img src="https://via.placeholder.com/120x40?text=LOGO" alt="Driving School Logo" />
                 <h1>Email Confirmation</h1>
             </td>
         </tr>
         <tr>
             <td class="body-content">
-                <p>Hi {{UserName}}, your Membership Number is {{MembershipNo}}</p>
-                <p>Thank you for registering on {{AppName}}! Please click the button below to confirm your email address.</p>
+                <p>Hello <span class="highlight">{{UserName}}</span>,</p>
+                <p>Your Membership Number is <span class="highlight">{{MembershipNo}}</span>.</p>
+                <p>Thank you for registering with <span class="highlight">{{AppName}}</span>! To complete your registration, please confirm your email address by clicking the button below.</p>
                 <div class="button-container">
                     <a href="{{ConfirmationLink}}" class="button">Confirm Email</a>
                 </div>
-                <p>If you didn't sign up for this account, you can safely ignore this email.</p>
+                <p>If you did not register for this account, please disregard this message. Your email address will not be used without confirmation.</p>
             </td>
         </tr>
         <tr>
             <td class="footer">
-                <p>&copy; 2024 Driving School | All rights reserved.</p>
+                <p>&copy; 2024 {{AppName}} | All rights reserved.</p>
             </td>
         </tr>
     </table>

@@ -9,7 +9,7 @@ namespace App.Core.Interfaces.Services
         Task<string> GenerateAccessToken(User user);
         string GeneratePaymentToken(string referenceNo);
         bool ValidateToken(string token, out string refNo);
-        string GeneratePaymentToken(Guid userId, Guid serviceId, PaymentType paymentType);
+        string GeneratePaymentToken(User user, Guid serviceId, PaymentType paymentType);
         (bool IsValid, string? Email) ValidateUserToken(string token);
     }
 }

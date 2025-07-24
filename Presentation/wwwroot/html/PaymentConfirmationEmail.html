@@ -1,8 +1,8 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Payment Confirmation</title>
     <style>
         body {
@@ -25,7 +25,7 @@
         }
 
         .header {
-            background-color: #28a745;
+            background-color: #17a2b8;
             color: white;
             text-align: center;
             padding: 20px;
@@ -79,39 +79,36 @@
 
     <div class="email-container">
         <div class="header">
-            Payment Confirmation 🎉
+            Payment Confirmed ✅
         </div>
 
         <div class="content">
             <p>Dear {{Fullname}},</p>
 
-            <p>We are pleased to inform you that your application fee payment of {{Amount}} for {{Service}} has been successfully processed!</p>
+            <p>We’re happy to confirm that your payment of <strong>{{Amount}}</strong> for <strong>{{Service}}</strong> has been successfully processed!</p>
 
-            <p>Please note that this payment is for the application fee only. If your application is approved, you will gain full access to {{Service}}. However, if your application is not approved, you will not be able to access the service, and note that this payment is not refundable.</p>
+            <p>Thank you for staying compliant with your obligations. Your account is now in good standing, and you have full access to the associated services and privileges.</p>
 
-            <p>Below are the details of your payment:</p>
+            <p><strong>Payment Summary:</strong></p>
             <ul>
                 <li>Amount Paid: {{Amount}}</li>
                 <li>Payment Date: {{Date}}</li>
                 <li>Transaction ID: {{ReferenceNo}}</li>
             </ul>
 
-            <p>If you have any questions or need further assistance, please do not hesitate to contact us at {{InstituteEmail}}.</p>
+            <p>If you have any questions or notice any discrepancies, feel free to reach out to us at <a href="mailto:{{InstituteEmail}}">{{InstituteEmail}}</a>.</p>
 
-            <p>Thank you once again for your payment. We will notify you of the status of your application shortly!</p>
-
-            <a href="{{PaymentDetail}}" class="cta">View Your Payment Details</a>
+            <a href="{{PaymentDetail}}" class="cta">View Payment Receipt</a>
         </div>
 
         <div class="footer">
-            <p>Warm regards,</p>
+            <p>Best regards,</p>
             <p>{{Sendername}} | {{Level}}</p>
             <p>IPDIN Driving Institute</p>
             <p>Contact us: 08134466568</p>
-            <p><a href="mailto:{{InstituteEmail}}">Email us</a> for any inquiries.</p>
+            <p><a href="mailto:{{InstituteEmail}}">Email us</a> for any support or inquiries.</p>
         </div>
     </div>
 
 </body>
 </html>
-

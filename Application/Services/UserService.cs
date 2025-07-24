@@ -413,6 +413,7 @@ namespace App.Application.Services
                 );
         }
 
+
         private async Task<string> GenerateMembershipNumberAsync()
         {
             await membershipNumberSemaphore.WaitAsync();

@@ -1,5 +1,4 @@
 ﻿using App.Application.IExternalServices;
-using App.Application.Services;
 using App.Core.DTOs.Requests.CreateRequestDtos;
 using App.Core.DTOs.Requests.SearchRequestDtos;
 using App.Core.DTOs.Requests.UpdateRequestDtos;
@@ -11,12 +10,8 @@ using App.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Org.BouncyCastle.Asn1.Ocsp;
 using PayStack.Net;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace App.Infrastructure.ExternalServices
 {
@@ -33,13 +28,16 @@ namespace App.Infrastructure.ExternalServices
         private readonly IAppApplicationService _appApplicationService;
         private readonly ITokenService _tokenService;
         private readonly IAuthService _authService;
+        private readonly ILevelRepository _levelRepository;
+        private readonly IEmailService _emailService;
         private readonly string token;
 
         private PayStackApi PayStack { get; set; }
-        public PaymentService(IHttpContextAccessor httpContextAccessor, IPaymentRepository paymentRepository,
-            IConfiguration configuration, IUnitOfWork unitOfWork, IExaminationRepository examinationRepository,
+        public PaymentService(IHttpContextAccessor httpContextAccessor, IPaymentRepository paymentRepository, IUserService userService,
+            IConfiguration configuration, IUnitOfWork unitOfWork, IExaminationRepository examinationRepository, IEmailService emailService,
             IAppApplicationService appApplicationService, ITrainingRepository trainingRepository, UserManager<User> userManager,
-            IAppApplicationRepository appApplicationRepository, ITokenService tokenService, IAuthService authService)
+            IAppApplicationRepository appApplicationRepository, ITokenService tokenService, IAuthService authService, ILevelRepository levelRepository
+            )
         {
             _contextAccessor = httpContextAccessor;
             _paymentRepository = paymentRepository;
@@ -48,8 +46,10 @@ namespace App.Infrastructure.ExternalServices
             _configuration = configuration;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
+            _emailService = emailService;
             _appApplicationService = appApplicationService;
             _appApplicationRepository = appApplicationRepository;
+            _levelRepository = levelRepository;
             token = _configuration["Payment:PaystackSK"]!;
             PayStack = new PayStackApi(token);
             _tokenService = tokenService;
@@ -199,7 +199,8 @@ namespace App.Infrastructure.ExternalServices
                 };
             }
 
-            if (HasPendingApplication(user, requestDto.ServiceId)) return new Core.DTOs.Responses.ApiResponse<string>
+            var hasPendingApplication = HasPendingApplication(user, requestDto.ServiceId, requestDto.PaymentType);
+            if (hasPendingApplication) return new Core.DTOs.Responses.ApiResponse<string>
             {
                 IsSuccessful = false,
                 Message = "You already have a pending application, hence you cannot apply for this at the moment."
@@ -318,7 +319,7 @@ namespace App.Infrastructure.ExternalServices
             };
             _paymentRepository.Update(payment);
 
-            if (response.Data.Status == "success" && payment.ServiceId != Guid.Empty)
+            if (response.Data.Status == "success")
             {
                 var serviceName = await FlagServiceHasPaidAsync(payment.PaymentType, payment.ServiceId, payment.User);
                 string token = _tokenService.GeneratePaymentToken(referenceNo);
@@ -326,8 +327,11 @@ namespace App.Infrastructure.ExternalServices
 
                 if (serviceName == "Application")
                 {
-                    _appApplicationService.ApplicationPaymentNotification(payment, url);
+                    _appApplicationService.ApplicationPaymentConfirmation(payment, url);
                 }
+                else
+                    PaymentConfirmationEmail(payment, url);
+                
             }
             await _unitOfWork.SaveAsync();
             return new Core.DTOs.Responses.ApiResponse<string>
@@ -365,17 +369,21 @@ namespace App.Infrastructure.ExternalServices
             return response;
         }
 
-        static private bool HasPendingApplication(User user, Guid serviceId)
+        private bool HasPendingApplication(User user, Guid serviceId, PaymentType paymentType)
         {
             ArgumentNullException.ThrowIfNull(user);
             if (user.Applications == null) return false;
 
-            if (serviceId == Guid.Empty) throw new ArgumentException("Service ID cannot be empty.", nameof(serviceId));
+            if (paymentType != PaymentType.Application)
+                return false;
 
-            return user.Applications
-                .Any(application =>
-                    (application.TrainingId == serviceId || application.ExaminationId == serviceId) &&
-                    application.Status == Core.Enums.ApplicationStatus.Pending);
+            if (serviceId == Guid.Empty)
+                throw new ArgumentException("Service ID cannot be empty for payment types other than Dues.", nameof(serviceId));
+
+            var userApplications = _appApplicationRepository.GetApplicationsAsync(user);
+            return userApplications
+                            .Any(app =>
+                            app.Status == ApplicationStatus.Pending && app.HasPaid == true);
         }
 
         public async Task<PagedResponse<IEnumerable<PaymentResponseDto>>> GetUserPaymentsAsync(int pageSize, int pageNumber)
@@ -435,8 +443,7 @@ namespace App.Infrastructure.ExternalServices
 
         private async Task<(decimal fee, object? service)> GetServiceAsync(PaymentType paymentType, Guid serviceId, User user)
         {
-            //if (serviceId == Guid.Empty && (paymentType != PaymentType.Dues && paymentType != PaymentType.Registration))
-            //    throw new ArgumentException("Service ID cannot be empty for Training or Examination", nameof(serviceId));
+            var level = await _levelRepository.GetLevelAsync(level => level.Id == user.LevelId);
 
             switch (paymentType)
             {
@@ -451,7 +458,8 @@ namespace App.Infrastructure.ExternalServices
                     return (examination.Fee, examination);
 
                 case PaymentType.Dues:
-                    var userLevel = user.Level ?? throw new InvalidOperationException("User level not registered");
+                    if (level == null ) throw new InvalidOperationException("User level not registered");
+                    var userLevel = level;
                     return (userLevel.Dues, null);
 
                 case PaymentType.Application:
@@ -471,6 +479,8 @@ namespace App.Infrastructure.ExternalServices
 
         private async Task<string> FlagServiceHasPaidAsync(PaymentType paymentType, Guid serviceId, User user)
         {
+            var level = await _levelRepository.GetLevelAsync(level => level.Id == user.LevelId);
+
             switch (paymentType)
             {
                 case PaymentType.Training:
@@ -488,7 +498,7 @@ namespace App.Infrastructure.ExternalServices
                     return ("Examination");
 
                 case PaymentType.Dues:
-                    var userLevel = user.Level ?? throw new InvalidOperationException("User level not registered");
+                    var userLevel = level ?? throw new InvalidOperationException("User level not registered");
                     user.HasPaidDues = true;
                     await _userManager.UpdateAsync(user);
                     return ("Dues");
@@ -502,6 +512,29 @@ namespace App.Infrastructure.ExternalServices
                 default:
                     throw new ArgumentException("Invalid payment type", nameof(paymentType));
             }
+        }
+
+        private void PaymentConfirmationEmail(Payment payment, string url)
+        {
+            var replacements = new Dictionary<string, string>
+            {
+                { "Fullname", payment.User.FirstName + " " + payment.User.LastName },
+                { "Amount", payment.Amount.ToString("C2", new System.Globalization.CultureInfo("en-NG")) },
+                { "Service", $"Payment for {payment.PaymentFor}"},
+                { "Date", payment.CreatedOn.ToString("D") },
+                { "ReferenceNo", payment.PaymentRef },
+                { "InstituteEmail", _configuration["InstituteEmail"]!},
+                { "PaymentDetail", url },
+                { "Sendername", "Ajala Abdbasit" },
+                { "Level", "Admin" }
+            };
+
+            _emailService.SendEmail(
+                 "PaymentConfirmationEmail.html",
+                 replacements, payment.User.Email!,
+                 payment.User.FirstName + " " + payment.User.LastName,
+                 "Payment Confirmation"
+                 );
         }
     }
 }

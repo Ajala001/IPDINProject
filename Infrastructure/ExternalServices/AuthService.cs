@@ -336,17 +336,19 @@ namespace App.Infrastructure.ExternalServices
             string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
             string userFullName = $"{user.FirstName} {user.LastName}";
 
-            var replacements = new Dictionary<string, string>
-            {
-                { "UserName", userFullName },
-                { "AppName", "IPDIN Driving Institute" },
-                { "ConfirmationLink", url },
-                { "MembershipNo", user.MembershipNumber! }
-            };
-
             user.MembershipNumber = await GenerateMembershipNumberAsync();
             await userManager.UpdateAsync(user);
             await unitOfWork.SaveAsync();
+
+            var replacements = new Dictionary<string, string>
+            {
+                { "UserName", userFullName },
+                { "MembershipNo", user.MembershipNumber! },
+                { "AppName", "IPDIN Driving Institute" },
+                { "ConfirmationLink", url },
+               
+            };
+            
 
             emailService.SendEmail(
                 "ConfirmationEmailTemplate.html",

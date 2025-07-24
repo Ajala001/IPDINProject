@@ -32,11 +32,11 @@ namespace App.Application
             services.AddScoped<ITokenService, TokenService>();
 
             services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
-            services.AddHostedService<TrainingStatusUpdaterService>();
+            //services.AddHostedService<TrainingStatusUpdaterService>();
 
            
 
-            services.AddTransient<IAuthorizationHandler, PaymentHandler>();
+            services.AddScoped<IAuthorizationHandler, PaymentHandler>();
 
 
             return services;

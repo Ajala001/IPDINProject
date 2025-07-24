@@ -21,7 +21,7 @@ namespace App.Presentation.Controllers
         {
             var result = await sender.Send(new GetAllPaymentQuery(pageSize, pageNumber));
             if (result.IsSuccessful) return Ok(result);
-            return BadRequest(result);
+            return NotFound(result);
         }
 
 
@@ -30,7 +30,7 @@ namespace App.Presentation.Controllers
         {
             var result = await sender.Send(new GetUserPaymentsQuery(pageSize, pageNumber));
             if (result.IsSuccessful) return Ok(result);
-            return BadRequest(result);
+            return NotFound(result);
         }
 
 

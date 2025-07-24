@@ -22,7 +22,6 @@ namespace App.Presentation.Controllers
         public async Task<IActionResult> SignInAsync([FromBody] SignInRequestDto request)
         {
             var result = await sender.Send(new SignInCommand(request));
-            if (!result.IsSuccessful) return Unauthorized(result);
             return Ok(result);
         }
 

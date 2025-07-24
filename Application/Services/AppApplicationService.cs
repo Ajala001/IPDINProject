@@ -235,7 +235,6 @@ namespace App.Application.Services
             };
 
             application.Status = ApplicationStatus.Approved;
-            //await HandleTrainingAndExaminationApplicationAsync(application);
             await unitOfWork.SaveAsync();
 
             var serviceId = application.ExaminationId != Guid.Empty ? application.ExaminationId
@@ -243,8 +242,8 @@ namespace App.Application.Services
 
             var paymentType = application.ExaminationId != Guid.Empty ? PaymentType.Examination : PaymentType.Training;
 
-            var token = tokenService.GeneratePaymentToken(application.UserId, serviceId, paymentType);
-            string paymentUrl = $"{configuration["AngularUrl"]}/payments/initiate/{serviceId}?paymentType={paymentType}&token={token}";
+            var token = tokenService.GeneratePaymentToken(application.User, serviceId, paymentType);
+            string paymentUrl = $"{configuration["AngularUrl"]}/services/{serviceId}/detail?paymentType={paymentType}&token={token}";
             var replacements = new Dictionary<string, string>
             {
                 { "Applicant", application.User.FirstName + "" + application.User.LastName },
@@ -394,43 +393,7 @@ namespace App.Application.Services
             };
         }
 
-        //private async Task HandleTrainingAndExaminationApplicationAsync(AppApplication appApplication)
-        //{
-        //    var training = await trainingRepository.GetTrainingAsync(tr => tr.Title == appApplication.ApplicationPurpose);
-        //    if (training != null)
-        //    {
-        //        var userTraining = new UserTrainings
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            TrainingId = training.Id,
-        //            Training = training,
-        //            UserId = appApplication.UserId,
-        //            User = appApplication.User
-        //        };
-        //        training.Trainings.Add(userTraining);
-        //    }
-        //    else
-        //    {
-        //        var examination = await examinationRepository.GetExaminationAsync(e => e.ExamTitle == appApplication.ApplicationPurpose);
-        //        if (examination != null)
-        //        {
-        //            var userExamination = new UserExaminations
-        //            {
-        //                Id = Guid.NewGuid(),
-        //                ExaminationId = examination.Id,
-        //                Examination = examination,
-        //                UserId = appApplication.UserId,
-        //                User = appApplication.User
-        //            };
-        //            examination.Examinations.Add(userExamination);
-        //        }
-        //        else
-        //        {
-        //            throw new InvalidOperationException($"No training or examination found for the purpose: {appApplication.ApplicationPurpose}");
-        //        }
-        //    }
-        //}
-
+        
         private async Task<string> GetApplicationTitleAsync(CreateAppApplicationRequestDto request)
         {
             if (request.IsTraining)
@@ -443,11 +406,12 @@ namespace App.Application.Services
             return examination?.ExamTitle ?? string.Empty;
         }
 
-        public void ApplicationPaymentNotification(Payment payment, string url)
+
+        public void ApplicationPaymentConfirmation(Payment payment, string url)
         {
             var replacements = new Dictionary<string, string>
             {
-                { "Applicant", payment.User.FirstName + " " + payment.User.LastName },
+                { "Fullname", payment.User.FirstName + " " + payment.User.LastName },
                 { "Amount", payment.Amount.ToString("C2", new System.Globalization.CultureInfo("en-NG")) },
                 { "Service", $"Payment for {payment.PaymentFor}"},
                 { "Date", payment.CreatedOn.ToString("D") },
@@ -459,7 +423,7 @@ namespace App.Application.Services
             };
 
             emailService.SendEmail(
-                 "ApplicationPaymentEmail.html",
+                 "PaymentConfirmationEmail.html",
                  replacements, payment.User.Email!,
                  payment.User.FirstName + " " + payment.User.LastName,
                  "Application Status"

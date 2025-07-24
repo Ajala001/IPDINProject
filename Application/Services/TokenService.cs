@@ -74,7 +74,7 @@ namespace App.Application.Services
         }
 
 
-        public string GeneratePaymentToken(Guid userId, Guid serviceId, PaymentType paymentType)
+        public string GeneratePaymentToken(User user, Guid serviceId, PaymentType paymentType)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
@@ -82,7 +82,11 @@ namespace App.Application.Services
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new Claim("NameIdentifier", user.UserName!),
+                new Claim(ClaimTypes.Email, user.Email!),
+                new Claim("MembershipNum", user.MembershipNumber!),
                 new Claim("ServiceId", serviceId.ToString()),
                 new Claim("PaymentType", paymentType.ToString())
             };

@@ -3,6 +3,7 @@ using App.Application.AuthPolicy;
 using App.Core;
 using App.Core.Entities;
 using App.Core.Interfaces;
+using App.Core.Interfaces.Services;
 using App.Infrastructure;
 using App.Infrastructure.Data;
 using App.Infrastructure.Identity;
@@ -19,11 +20,9 @@ namespace App.Presentation
     {
         public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
         {
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("PaidDuesOnly", policy =>
+            services.AddAuthorizationBuilder()
+                .AddPolicy("PaidDuesOnly", policy =>
                     policy.Requirements.Add(new PaymentRequirement()));
-            });
 
             services.AddIdentity<User, Role>(options =>
             {
@@ -53,7 +52,8 @@ namespace App.Presentation
                         policy.WithOrigins("http://localhost:4200")
                               .AllowAnyMethod()
                               .AllowAnyHeader()
-                              .AllowCredentials(); // Important to allow cookies
+                              .AllowCredentials()
+                              .WithExposedHeaders("Location");
                     });
             });
 
@@ -112,28 +112,6 @@ namespace App.Presentation
                         Encoding.UTF8.GetBytes(configuration.GetSection("Jwt")["Key"] ?? throw new InvalidOperationException("JWT Key is missing"))
                     ),
                     RoleClaimType = ClaimTypes.Role
-                };
-                options.IncludeErrorDetails = true; // Helpful for debugging
-
-                // Custom JWT event handling
-                options.Events = new JwtBearerEvents
-                {
-                    OnChallenge = async context =>
-                    {
-                        context.HandleResponse();
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        await context.Response.WriteAsync("Unauthorized: Invalid or expired token.");
-                    },
-                    OnForbidden = async context =>
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        await context.Response.WriteAsync("Forbidden: You don't have permission.");
-                    },
-                    OnAuthenticationFailed = async context =>
-                    {
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        await context.Response.WriteAsync("Authentication failed: Invalid token.");
-                    }
                 };
             });
 
