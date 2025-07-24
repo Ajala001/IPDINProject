@@ -1,0 +1,7 @@
+bin/
+obj/
+.vs/
+.git/
+Dockerfile
+README.md
+*.md
