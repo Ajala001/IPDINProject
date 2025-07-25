@@ -1,4 +1,4 @@
-using App.Infrastructure.Data;
+﻿using App.Infrastructure.Data;
 using App.Infrastructure.Persistence;
 using App.Presentation;
 using Microsoft.EntityFrameworkCore;
@@ -69,7 +69,7 @@ using (var scope = app.Services.CreateScope())
 
 
 
-
+app.MapGet("/", () => Results.Ok("Driving Academy API is live 🚀"));
 
 app.MapControllers();
 

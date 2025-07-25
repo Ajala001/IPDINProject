@@ -45,8 +45,9 @@ namespace App.Infrastructure.Persistence
             }
 
             // Seed RegistrationType
-            Level level = null;
-            if (!await dbContext.Levels.AnyAsync(rt => rt.Name == "Fellow"))
+            Level level = await dbContext.Levels.FirstOrDefaultAsync(l => l.Name == "Fellow");
+
+            if (level == null)
             {
                 level = new Level
                 {
@@ -60,6 +61,7 @@ namespace App.Infrastructure.Persistence
                 await dbContext.Levels.AddAsync(level);
                 await dbContext.SaveChangesAsync();
             }
+
 
 
             // Seed users

@@ -141,7 +141,7 @@ namespace App.Infrastructure.ExternalServices
                 Data = new AuthResponse
                 {
                     AccessToken = accessToken,
-                    RefreshToken = null!
+                    RefreshToken = null
                 }
             };
         }
