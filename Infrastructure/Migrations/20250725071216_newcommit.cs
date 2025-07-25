@@ -7,7 +7,7 @@ using MySql.EntityFrameworkCore.Metadata;
 namespace App.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class newcommit : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -238,8 +238,6 @@ namespace App.Infrastructure.Migrations
                     DriverLicenseNo = table.Column<string>(type: "longtext", nullable: false),
                     YearIssued = table.Column<short>(type: "smallint", nullable: false),
                     ExpiringDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    RefreshToken = table.Column<string>(type: "longtext", nullable: false),
-                    RefreshTokenExpiry = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     YearsOfExperience = table.Column<short>(type: "smallint", nullable: false),
                     NameOfCurrentDrivingSchool = table.Column<string>(type: "longtext", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),

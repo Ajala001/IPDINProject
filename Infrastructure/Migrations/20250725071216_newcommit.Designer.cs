@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace App.Infrastructure.Migrations
 {
     [DbContext(typeof(IPDINDbContext))]
-    [Migration("20250725064629_UpdateRefreshTokenNullable")]
-    partial class UpdateRefreshTokenNullable
+    [Migration("20250725071216_newcommit")]
+    partial class newcommit
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
