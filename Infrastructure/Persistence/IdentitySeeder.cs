@@ -86,7 +86,8 @@ namespace App.Infrastructure.Persistence
                     YearsOfExperience = 5,
                     NameOfCurrentDrivingSchool = "IPDIN",
                     Level = level,
-                    MembershipNumber = "ADM/2024/0001",
+                    MembershipNumber = "ADM/2025/0001",
+                    HasPaidDues = true,
                     CreatedOn = DateTime.Now,
                     CreatedBy = "Admin"
                 };
