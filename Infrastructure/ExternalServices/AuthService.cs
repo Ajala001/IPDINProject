@@ -16,7 +16,7 @@ namespace App.Infrastructure.ExternalServices
 {
     public class AuthService(UserManager<User> userManager, SignInManager<User> signInManager, IUnitOfWork unitOfWork,
         IAcademicQualificationRepository qualificationRepository, IConfiguration configuration, IHttpContextAccessor contextAccessor,
-        IEmailService emailService, ILevelRepository levelRepository, ITokenService tokenService) : IAuthService
+        IEmailService emailService, ILevelRepository levelRepository, ITokenService tokenService, IUserService userService) : IAuthService
     {
         private static readonly SemaphoreSlim membershipNumberSemaphore = new SemaphoreSlim(1, 1);
         public async Task<ApiResponse<UserResponseDto>> SignUpAsync(SignUpRequestDto request)
@@ -60,6 +60,7 @@ namespace App.Infrastructure.ExternalServices
                         CreatedBy = request.Email,
                         CreatedOn = DateTime.Now
                     };
+                    newUser.ProfilePic = userService.AssignDummyImages(newUser);
                     var result = await userManager.CreateAsync(newUser, request.Password);
                     if (!result.Succeeded)
                     {

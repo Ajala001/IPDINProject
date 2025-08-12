@@ -8,6 +8,7 @@ namespace App.Core.Interfaces.Services
 {
     public interface IUserService
     {
+        string AssignDummyImages(User user);
         Task<ApiResponse<UserResponseDto>> AddAdminAsync(AddAdminDto addAdminDto);
         Task<ApiResponse<UserResponseDto>> GetUserAsync(string email);
         Task<PagedResponse<IEnumerable<UserResponseDto>>> GetUsersAsync(int pageSize, int pageNumber);

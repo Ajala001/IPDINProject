@@ -115,7 +115,6 @@ namespace App.Presentation
                 };
             });
 
-
             services.AddScoped<IAppEnvironment, AppEnvironment>();
 
             services.AddApplication()
