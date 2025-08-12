@@ -433,5 +433,22 @@ namespace App.Application.Services
                 membershipNumberSemaphore.Release();
             }
         }
+
+        public string AssignDummyImages(User user)
+        {
+            string profilePic = user.ProfilePic;
+
+            if (string.IsNullOrEmpty(profilePic))
+            {
+                if (user.Gender is Core.Enums.Gender.Male) 
+                    profilePic = configuration["DefaultImages:MaleProfilePic"]!;
+                else if (user.Gender is Core.Enums.Gender.Female) 
+                    profilePic = configuration["DefaultImages:FemaleProfilePic"]!;
+                else
+                    profilePic = configuration["DefaultImages:MaleProfilePic"]!; 
+            }
+
+            return profilePic;
+        }
     }
 }
