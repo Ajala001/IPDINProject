@@ -20,13 +20,13 @@ builder.Services.AddPresentation(configuration, builder.Environment);
 
 var app = builder.Build();
 
-var allowedOrigin = app.Environment.IsDevelopment() ? "http://localhost:4200" : "https://yourfrontendurl.onrender.com";
+
 
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
     {
-        context.Context.Response.Headers.Append("Access-Control-Allow-Origin", allowedOrigin);
+        context.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:4200");
     }
 });
 

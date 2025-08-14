@@ -48,7 +48,7 @@ namespace App.Presentation
                 options.AddPolicy("AllowAngularApp",
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:4200", "https://driveacademy.onrender.com")
+                        policy.WithOrigins("http://localhost:4200")
                               .AllowAnyMethod()
                               .AllowAnyHeader()
                               .AllowCredentials()
