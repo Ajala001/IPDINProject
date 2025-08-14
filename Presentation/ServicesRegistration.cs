@@ -3,7 +3,6 @@ using App.Application.AuthPolicy;
 using App.Core;
 using App.Core.Entities;
 using App.Core.Interfaces;
-using App.Core.Interfaces.Services;
 using App.Infrastructure;
 using App.Infrastructure.Data;
 using App.Infrastructure.Identity;
@@ -49,7 +48,7 @@ namespace App.Presentation
                 options.AddPolicy("AllowAngularApp",
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:4200")
+                        policy.WithOrigins("http://localhost:4200", "https://driveacademy.onrender.com")
                               .AllowAnyMethod()
                               .AllowAnyHeader()
                               .AllowCredentials()
