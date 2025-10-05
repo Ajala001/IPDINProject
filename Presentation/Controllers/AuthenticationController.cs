@@ -39,7 +39,7 @@ namespace App.Presentation.Controllers
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token)) return BadRequest();
             var result = await sender.Send(new ConfirmEmailCommand(email, token));
-            if(result.IsSuccessful) return Redirect($"{configuration["AngularUrl"]}/confirmation-page");
+            if(result.IsSuccessful) return Redirect($"{configuration["App:FrontEndUrl"]}/ confirmation-page");
             return BadRequest(result);
         }
 

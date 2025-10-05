@@ -216,7 +216,7 @@ namespace App.Infrastructure.ExternalServices
                 Email = user.Email!,
                 Reference = transactionReference,
                 Currency = "NGN",
-                CallbackUrl = $"{_configuration["AngularUrl"]}/payments/verify?applicationId={requestDto.ServiceId}&reason={requestDto.PaymentType}&reference={transactionReference}"
+                CallbackUrl = $"{_configuration["App:FrontEndUrl"]}/payments/verify?applicationId={requestDto.ServiceId}&reason={requestDto.PaymentType}&reference={transactionReference}"
             });
 
             if (!payStackResponse.Status) return new Core.DTOs.Responses.ApiResponse<string>
@@ -323,7 +323,7 @@ namespace App.Infrastructure.ExternalServices
             {
                 var serviceName = await FlagServiceHasPaidAsync(payment.PaymentType, payment.ServiceId, payment.User);
                 string token = _tokenService.GeneratePaymentToken(referenceNo);
-                string url = $"{_configuration["AngularUrl"]}/payments-user?token={token}";
+                string url = $"{_configuration["App:FrontEndUrl"]}/payments-user?token={token}";
 
                 if (serviceName == "Application")
                 {

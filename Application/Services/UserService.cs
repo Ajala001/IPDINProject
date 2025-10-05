@@ -389,7 +389,7 @@ namespace App.Application.Services
             var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
             var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
-            string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
+            string url = $"{configuration["App:BackEndUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
             string userFullName = $"{user.FirstName} {user.LastName}";
 
             var replacements = new Dictionary<string, string>

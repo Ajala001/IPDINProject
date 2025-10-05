@@ -198,7 +198,7 @@ namespace App.Infrastructure.ExternalServices
             var token = await userManager.GeneratePasswordResetTokenAsync(user);
             var encodedEmailToken = Encoding.UTF8.GetBytes(token);
             var validToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
-            string url = $"{configuration["AngularUrl"]}/reset-password?email={email}&token={validToken}";
+            string url = $"{configuration["App:FrontEndUrl"]}/reset-password?email={email}&token={validToken}";
 
             var replacements = new Dictionary<string, string>
             {
@@ -303,7 +303,7 @@ namespace App.Infrastructure.ExternalServices
             var encodedEmailToken = Encoding.UTF8.GetBytes(token);
             var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
-            string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
+            string url = $"{configuration["App:BackEndUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
             var replacements = new Dictionary<string, string>
             {
                 { "UserName", user.FirstName + " " + user.LastName },
@@ -333,7 +333,7 @@ namespace App.Infrastructure.ExternalServices
             var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
             var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
-            string url = $"{configuration["AppUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
+            string url = $"{configuration["App:BackEndUrl"]}/api/auth/confirmEmail?email={user.Email}&token={validEmailToken}";
             string userFullName = $"{user.FirstName} {user.LastName}";
 
             user.MembershipNumber = await GenerateMembershipNumberAsync();

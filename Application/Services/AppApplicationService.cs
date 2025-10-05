@@ -243,7 +243,7 @@ namespace App.Application.Services
             var paymentType = application.ExaminationId != Guid.Empty ? PaymentType.Examination : PaymentType.Training;
 
             var token = tokenService.GeneratePaymentToken(application.User, serviceId, paymentType);
-            string paymentUrl = $"{configuration["AngularUrl"]}/services/{serviceId}/detail?paymentType={paymentType}&token={token}";
+            string paymentUrl = $"{configuration["App:FrontEndUrl"]}/services/{serviceId}/detail?paymentType={paymentType}&token={token}";
             var replacements = new Dictionary<string, string>
             {
                 { "Applicant", application.User.FirstName + "" + application.User.LastName },
@@ -286,7 +286,7 @@ namespace App.Application.Services
             application.Status = ApplicationStatus.Rejected;
             await unitOfWork.SaveAsync();
             
-            string otherServices = $"{configuration["AngularUrl"]}/services";
+            string otherServices = $"{configuration["App:FrontEndUrl"]}/services";
             var replacements = new Dictionary<string, string>
             {
                 { "Applicant", application.User.FirstName + "" + application.User.LastName },
