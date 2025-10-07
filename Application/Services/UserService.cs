@@ -17,11 +17,10 @@ using System.Text;
 
 namespace App.Application.Services
 {
-    public class UserService(UserManager<User> userManager, IFileRepository fileRepository,
+    public class UserService(UserManager<User> userManager, IFileRepository fileRepository, IMembershipService membershipService,
         IHttpContextAccessor httpContextAccessor, ILevelRepository levelRepository, IConfiguration configuration, IEmailService emailService,
         IUnitOfWork unitOfWork, IAcademicQualificationRepository qualificationRepository) : IUserService
     {
-        private static readonly SemaphoreSlim membershipNumberSemaphore = new SemaphoreSlim(1, 1);
         public async Task<ApiResponse<UserResponseDto>> DeleteAsync(string email)
         {
             var user = await userManager.FindByEmailAsync(email);
@@ -395,13 +394,13 @@ namespace App.Application.Services
             var replacements = new Dictionary<string, string>
             {
                 { "UserName", userFullName },
-                { "AppName", "IPDIN Driving Institute" },
+                { "AppName", configuration["AppName"]! },
                 { "ConfirmationLink", url },
                 { "MembershipNo", user.MembershipNumber! },
                 { "Password", configuration["AdminDefaultPass"]! }
             };
 
-            var membershipNum = await GenerateMembershipNumberAsync();
+            var membershipNum = await membershipService.GenerateMembershipNumberAsync(role);
             user.MembershipNumber = membershipNum;
             await userManager.UpdateAsync(user);
             await unitOfWork.SaveAsync();
@@ -411,27 +410,6 @@ namespace App.Application.Services
                 replacements, user.Email!, 
                 userFullName, "Confirm Your Email"
                 );
-        }
-
-
-        private async Task<string> GenerateMembershipNumberAsync()
-        {
-            await membershipNumberSemaphore.WaitAsync();
-            try
-            {
-                // Fetch the list of users in the "Admin" role
-                var adminUsers = await userManager.GetUsersInRoleAsync("Admin");
-                int adminCount = adminUsers.Count + 1; // New admin's number is count + 1
-
-                string year = DateTime.Now.Year.ToString();
-                string uniqueId = adminCount.ToString("D4"); // Zero-padded four-digit unique ID
-
-                return $"ADM/{year}/{uniqueId}";
-            }
-            finally
-            {
-                membershipNumberSemaphore.Release();
-            }
         }
 
         public string AssignDummyImages(User user)

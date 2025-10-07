@@ -53,6 +53,7 @@ namespace App.Infrastructure
             services.AddScoped<IFileRepository, FileRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IMembershipNumberCounters, MembershipNumberCounter>();
             services.AddHttpContextAccessor();
 
             services.AddTransient<IEmailService, EmailService>();

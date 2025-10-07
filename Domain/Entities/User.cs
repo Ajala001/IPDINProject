@@ -9,6 +9,7 @@ namespace App.Core.Entities
         public required string FirstName { get; set; }
         public string? MembershipNumber { get; set; }
         public bool HasPaidDues { get; set; } = false;
+        public bool IsActivated { get; set; } = false;
         public required Gender Gender { get; set; }
         public DateTime DateOfBirth { get; set; }
         public string? ProfilePic { get; set; }

@@ -18,6 +18,7 @@ namespace App.Infrastructure.Data
         public DbSet<BatchResult> BatchResults { get; set; }
         public DbSet<Training> Trainings { get; set; }
         public DbSet<Level> Levels { get; set; }
+        public DbSet<MembershipNumberCounter> MembershipNumberCounters { get; set; }
         public DbSet<AcademicQualification> AcademicQualifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
